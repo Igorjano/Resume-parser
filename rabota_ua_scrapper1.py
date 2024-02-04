@@ -50,12 +50,36 @@ switcher = driver.find_element(By.TAG_NAME, 'santa-toggler')
 switcher.click()
 sleep(3)
 
-
-
-
-
-
-
+#
+# def show_all_checkboxes(self):
+#     filters = self.driver.find_element(By.CLASS_NAME, 'filters-sidebar')
+#     self.scroll_screen()
+#     add_btns = filters.find_elements(By.TAG_NAME, 'button')
+#     [btn.click() for btn in add_btns]
+#     sleep(2)
+#     self.driver.execute_script("window.scrollTo(0, document.body.scrollTop);")
+#
+#
+# def set_checkboxes(self, keywords):
+#     self.show_all_checkboxes()
+#     filters_elm = self.driver.find_elements(By.TAG_NAME, 'alliance-employer-cvdb-simple-rubric')
+#     list_elm = self.driver.find_elements(By.CLASS_NAME, 'list-item')
+#     for lst in list_elm:
+#         try:
+#             lst.find_element(By.TAG_NAME, 'santa-checkbox').click()
+#             print(f'Click {lst.text}')
+#         except ElementNotInteractableException:
+#             print(f'No click {lst.text}')
+#             continue
+#     # print(len(list_elm))
+#     # filters_elm = self.driver.find_elements(By.CLASS_NAME, 'list-item')
+#     # [x.click() for x in filters_elm if x.text in keywords]
+#     # checkboxes = filters_elm.find_element(By.TAG_NAME, 'input')
+#     # for box in filters_elm:
+#     #     box.find_element(By.TAG_NAME, 'input').click()
+#     # [box.click() for box in checkboxes]
+#
+#     # [x.click() for x in checkboxes_elm if x.text in keywords]
 
 
 
