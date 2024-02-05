@@ -22,11 +22,12 @@ from time import sleep
 options = webdriver.ChromeOptions()
 options.add_argument("--window-size=1366,768")
 options.add_argument("--blink-settings=imagesEnabled=false")
-# options.add_argument('--headless=new')
+options.add_argument('--headless=new')
 
 # url = 'https://robota.ua/ru/candidates/all/ukraine'
 # url = 'https://robota.ua/ru/candidates/data-analyst/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
-url = 'https://robota.ua/ru/candidates/data-scientist/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
+# url = 'https://robota.ua/ru/candidates/data-scientist/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
+url = 'https://robota.ua/ru/candidates/python-developer/kyiv'
 
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                           options=options)
@@ -35,22 +36,45 @@ driver.get(url)
 
 # driver.find_element(By.CLASS_NAME, 'additional-no-x-indent').click()
 # filters_btn.click()
-# time.sleep(5)
+sleep(2)
+
+
+def get_score(cv):
+    try:
+        score_text = cv.find_element(By.TAG_NAME, 'alliance-fillable-resume').text
+        # print(score_text)
+        score = ''
+        for let in score_text:
+            score += let if let.isnumeric() else ''
+            # if let.isnumeric():
+            #     score += let
+        score = int(score)
+    except NoSuchElementException:
+        score = 0
+    return score
 
 
 # filters_cont = driver.find_element(By.CLASS_NAME, 'filter-panel-container')
-url = 'https://robota.ua/ru/candidates/data-analyst/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
-driver.get(url)
 keywords = ['IT', 'Банки', 'Наука', 'Интернет', 'Юридические услуги', 'Retail']
 
-# filters = driver.find_element(By.CLASS_NAME, 'filters-sidebar')
-switcher = driver.find_element(By.TAG_NAME, 'santa-toggler')
-# switcher = photo_elm.find_element(By.TAG_NAME, 'input')
-# sleep(1)
-switcher.click()
-sleep(3)
+cv_elements = driver.find_elements(By.CLASS_NAME, 'cv-card')
+print(len(cv_elements))
+for cv in cv_elements:
+    position = cv.find_element(By.CLASS_NAME, 'santa-m-0').text
+    cv_page = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
+    score = get_score(cv)
+    # try:
+    #     score_text = cv.find_element(By., 'alliance-fillable-resume').text
+    # except NoSuchElementException:
+    # score = self.get_score(score_text)
+    # self.get_cv_info(cv_page, score)
+    print(position)
+    print(score)
+    print(cv_page)
 
-#
+
+
+
 # def show_all_checkboxes(self):
 #     filters = self.driver.find_element(By.CLASS_NAME, 'filters-sidebar')
 #     self.scroll_screen()

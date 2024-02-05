@@ -41,9 +41,26 @@ class RobotaUaParser:
         for cv in cv_elements:
             position = cv.find_element(By.CLASS_NAME, 'santa-m-0').text
             cv_page = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
-            get_candidate_info()
+            score = self.get_score(cv)
+            self.get_cv_info(cv_page, score)
             print(position)
             print(cv_page)
+
+    def get_cv_info(self, url, score):
+        pass
+
+    @staticmethod
+    def get_score(cv):
+        try:
+            score_text = cv.find_element(By.TAG_NAME, 'alliance-fillable-resume').text
+            score = ''
+            for let in score_text:
+                score += let if let.isnumeric() else score
+            score = int(score)
+        except NoSuchElementException:
+            score = 0
+        return score
+
 
     def select_options(self):
         # print('Please enter search parameters. If you want to leave fields empty just press Enter')
