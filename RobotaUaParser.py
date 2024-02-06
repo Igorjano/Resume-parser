@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import ElementNotInteractableException
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
@@ -26,6 +27,7 @@ class RobotaUaParser:
         self.select_options()
         try:
             pages_elm = self.driver.find_element(By.TAG_NAME, 'santa-pagination-with-links')
+            print(F'PAGES ELM = {pages_elm}')
             pages_links = pages_elm.find_elements(By.TAG_NAME, 'a')
             if len(pages_links) > 5:
                 print('PARSE NEXT PAGES')
@@ -47,6 +49,8 @@ class RobotaUaParser:
                 next_page.click()
                 sleep(1)
                 print('click')
+                # sleep(1)
+                print('CLICK NEXT PAGE')
             except NoSuchElementException:
                 print('EXCEPTION IS WORKING')
                 print('STOP')
@@ -54,6 +58,7 @@ class RobotaUaParser:
 
     def parse_pages(self, pages_links):
         pages = [page.get_attribute('href') for page in pages_links[1: len(pages_links)]]
+        print('PARSE PAGE')
         self.get_cv_data()
         for page in pages:
             self.driver.get(page)
@@ -66,12 +71,46 @@ class RobotaUaParser:
             sleep(1)
             page_link = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
             self.driver.get(page_link)
+            print('GET CV')
+            sleep(2)
+            cv_info = {}
+            cv_info['position'] = (cv.find_element(By.TAG_NAME, 'alliance-employer-cvdb-card-content-desktop').
+                                   find_element(By.TAG_NAME, 'p')).text
+            print(cv_info['position'])
+            cv_info['cv_page'] = (cv.find_element(By.CLASS_NAME, 'santa-no-underline').
+                                  get_attribute("href"))
+            print(cv_info['cv_page'])
+            cv_info['cv_fullness'] = self.get_numbers(cv)
+            print(cv_info['cv_fullness'])
             if self.keywords:
+                cv.find_element(By.TAG_NAME, 'a').click()
                 skills_match = self.check_skills()
                 if skills_match:
-                    self.get_candidate_info(cv, skills_match)
+                    print('CHECK SKILLS')
+                    cv_info['key_match'] = skills_match
+                    self.result.append(cv_info)
             else:
-                self.get_candidate_info(cv)
+                cv_info['key_match'] = 0
+                self.result.append(cv_info)
+
+    # def get_cv_data(self):
+    #     cv_elements = self.driver.find_elements(By.CLASS_NAME, 'cv-card')
+    #     print('GET CV_ELEMENTS')
+    #     for cv in cv_elements:
+    #         print('GET CV')
+    #         sleep(2)
+    #         candidate_info = {}
+    #         candidate_info['cv'] = (cv.find_element(By.CLASS_NAME, 'santa-no-underline').
+    #                                 get_attribute("href"))
+    #         cv_completeness = self.get_numbers(cv)
+    #         if self.keywords:
+    #             cv.find_element(By.TAG_NAME, 'a').click()
+    #             skills_match = self.check_skills()
+    #             if skills_match:
+    #                 print('CHECK SKILLS')
+    #                 self.get_candidate_info_from_cv(skills_match, cv_completeness)
+    #         else:
+    #             self.get_candidate_info_from_list(cv, cv_completeness)
 
     def check_skills(self):
         try:
@@ -105,23 +144,53 @@ class RobotaUaParser:
         print('GET CANDIDATE!')
         # self.driver.quit()
 
+
+    # def get_candidate_info_from_list(self, cv, cv_completeness):
+    #     candidate_info = {}
+    #     candidate_info['position'] = (cv.find_element(By.TAG_NAME, 'alliance-employer-cvdb-card-content-desktop').
+    #                                   find_element(By.TAG_NAME, 'p')).text
+    #     print(candidate_info['position'])
+    #     candidate_info['cv'] = (cv.find_element(By.CLASS_NAME, 'santa-no-underline').
+    #                             get_attribute("href"))
+    #     print(candidate_info['cv'])
+    #     candidate_info['skills_match'] = 0
+    #     print(candidate_info['skills_match'])
+    #     candidate_info['cv_completeness'] = cv_completeness
+    #     print(candidate_info['cv_completeness'])
+    #
+    #     print('GET CANDIDATE!')
+    #     self.result.append(candidate_info)
+
+    # def get_candidate_info_from_cv(self, skills_match, cv_completeness):
+    #     candidate_info = {}
+    #     candidate_info['position'] = (self.driver.find_element(By.TAG_NAME, 'lib-resume-main-info').
+    #                                   find_element(By.CLASS_NAME, 'santa-typo-secondary')).text
+    #     print(candidate_info['position'])
+    #     candidate_info['cv'] = self.driver.current_url
+    #     print(candidate_info['cv'])
+    #     candidate_info['skills_match'] = skills_match
+    #     print(candidate_info['skills_match'])
+    #     candidate_info['cv_completeness'] = cv_completeness
+    #     print(candidate_info['cv_completeness'])
+    #
+    #     print('GET CANDIDATE!')
+    #     self.result.append(candidate_info)
+
     # Get numbers from string
     @staticmethod
     def get_numbers(cv):
-        score = 0
         try:
             score_text = cv.find_element(By.TAG_NAME, 'alliance-fillable-resume').text
             if any(char.isdigit() for char in score_text):
                 score = ''.join(num for num in score_text if num.isdigit())
-                print(score)
                 return int(score)
         except NoSuchElementException:
-            return score
+            return 0
 
     def select_options(self):
         # print('Please enter search parameters. If you want to leave fields empty just press Enter')
         # position = input('Job position:\t')
-        position = 'Web developer'
+        position = 'Data analyst'
         if position:
             self.set_position(position)
         # location = input('Location:\t')
@@ -132,6 +201,8 @@ class RobotaUaParser:
         #                  .capitalize().split(','))
         # self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
         # years_of_exp = 10
+        self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
+        # years_of_exp = 1
         # years_of_exp = input('If you want candidates without experience enter 0. Years of experience:\t')
         # if years_of_exp:
         #     years_of_exp = self.validate(years_of_exp)
@@ -142,6 +213,12 @@ class RobotaUaParser:
         #     self.validate(salary_min)
         #     self.validate(salary_max)
         #     self.set_salary(salary_min, salary_max)
+        salary_min = 20000
+        salary_max = 60000
+        if salary_min or salary_max:
+            self.validate(salary_min)
+            self.validate(salary_max)
+            self.set_salary(salary_min, salary_max)
         # photos = input('Enter yes/no to show resumes with photo only:\t'
         # photo = 'yes'
         # if photo == 'yes':
