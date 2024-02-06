@@ -5,94 +5,142 @@ from selenium.common.exceptions import ElementNotInteractableException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
-from time import sleep
 
 
 class RobotaUaParser:
     def __init__(self):
+        self.result = []
+        self.keywords = None
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
-        # self.options.add_argument('--headless=new')
+        self.options.add_argument("--blink-settings=imagesEnabled=false")
+        self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
+        self.driver.implicitly_wait(10)
 
     def parse(self, url):
         self.driver.get(url)
+        print('GET URL')
         self.select_options()
-        sleep(3)
-        # while True:
-        #     self.get_cv_link()
-        #     try:
-        #         next_page = self.driver.find_element(By.CLASS_NAME, 'next')
-        #         next_page.click()
-        #         time.sleep(1)
-        #         print('click')
-        #     except NoSuchElementException:
-        #         print('EXCEPTION IS WORKING')
-        #         print('STOP')
-        #         break
+        try:
+            pages_elm = self.driver.find_element(By.TAG_NAME, 'santa-pagination-with-links')
+            pages_links = pages_elm.find_elements(By.TAG_NAME, 'a')
+            if len(pages_links) > 5:
+                print('PARSE NEXT PAGES')
+                self.parse_next_page()
+            else:
+                print('PARSE PAGES')
+                self.parse_pages(pages_links)
+        except NoSuchElementException:
+            self.get_cv_data()
+        print(self.result)
 
-    def scroll_screen(self):
-        for i in range(0, 4000, 500):
-            self.driver.execute_script(f"window.scrollTo({i}, {i + 500});")
+    # If we have more than 5 pages and next button
+    def parse_next_page(self):
+        next_page = True
+        while next_page:
+            try:
+                self.get_cv_data()
+                next_page = self.driver.find_element(By.CLASS_NAME, 'next')
+                next_page.click()
+                # sleep(1)
+                print('click')
+            except NoSuchElementException:
+                print('EXCEPTION IS WORKING')
+                print('STOP')
+                next_page = False
 
-    def get_cv_link(self):
+    def parse_pages(self, pages_links):
+        pages = [page.get_attribute('href') for page in pages_links[1: len(pages_links)]]
+        self.get_cv_data()
+        for page in pages:
+            self.driver.get(page)
+            self.get_cv_data()
+
+    def get_cv_data(self):
         cv_elements = self.driver.find_elements(By.CLASS_NAME, 'cv-card')
+        print('GET CV_ELEMENTS')
         for cv in cv_elements:
-            position = cv.find_element(By.CLASS_NAME, 'santa-m-0').text
-            cv_page = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
-            score = self.get_score(cv)
-            self.get_cv_info(cv_page, score)
-            print(position)
-            print(cv_page)
+            self.driver.get(cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href"))
+            if self.keywords:
+                skills_match = self.check_skills()
+                if skills_match:
+                    self.get_candidate_info(cv, skills_match)
+            else:
+                self.get_candidate_info(cv)
 
-    def get_cv_info(self, url, score):
-        pass
+    def check_skills(self):
+        try:
+            skills_match = 0
+            skills = (self.driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary').
+                      find_element(By.CLASS_NAME, 'santa-m-0').text)
+            for key in self.keywords:
+                if key in skills:
+                    skills_match += 1
+                    print(key)
+            print(skills_match)
+            return skills_match
+        except NoSuchElementException:
+            return 0
+        finally:
+            self.driver.back()
 
+    def get_candidate_info(self, cv, skills_match=0):
+        candidate_info = {}
+        candidate_info['position'] = cv.find_element(By.TAG_NAME, 'p').text
+        candidate_info['name'] = cv.find_element(By.CLASS_NAME, 'santa-pr20').text
+        candidate_info['city'] = cv.find_element(By.CLASS_NAME, 'santa-typo-secondary').text
+        candidate_info['age'] = (cv.find_element(By.CLASS_NAME, 'santa-typo-secondary').
+                                 find_element(By.CLASS_NAME, 'santa-typo-secondary').text)
+        candidate_info['skills_match'] = skills_match
+        candidate_info['cv_completeness'] = self.get_numbers(cv)
+        candidate_info['cv'] = (cv.find_element(By.CLASS_NAME, 'santa-no-underline').
+                                get_attribute("href"))
+        self.result.append(candidate_info)
+        print('GET CANDIDATE!')
+
+    # Get numbers from string
     @staticmethod
-    def get_score(cv):
+    def get_numbers(cv):
+        score = 0
         try:
             score_text = cv.find_element(By.TAG_NAME, 'alliance-fillable-resume').text
-            score = ''
-            for let in score_text:
-                score += let if let.isnumeric() else score
-            score = int(score)
+            if any(char.isdigit() for char in score_text):
+                score = ''.join(num for num in score_text if num.isdigit())
+                print(score)
+                return int(score)
         except NoSuchElementException:
-            score = 0
-        return score
-
+            return score
 
     def select_options(self):
         # print('Please enter search parameters. If you want to leave fields empty just press Enter')
         # position = input('Job position:\t')
-        position = 'Python developer'
+        position = 'Web developer'
         if position:
             self.set_position(position)
         # location = input('Location:\t')
-        location = 'Киев'
-        if location:
-            self.set_location(location)
-        # keywords = input('Enter skills or keywords separated by commas:\t').capitalize().split(',')
-        keywords = ['IT', 'Development', 'Наука', 'Продажи', 'Банки', 'Транспорт и логистика']
-        # print(keywords)
-        # if keywords:
-        #     self.set_checkboxes(keywords)
-        years_of_exp = 7
+        # location = 'Киев'
+        # if location:
+        #     self.set_location(location)
+        # self.keywords = (input('Enter skills or keywords separated by commas or press Enter:\t')
+        #                  .capitalize().split(','))
+        # self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
+        years_of_exp = 1
         # years_of_exp = input('If you want candidates without experience enter 0. Years of experience:\t')
         if years_of_exp:
             years_of_exp = self.validate(years_of_exp)
             self.set_experience(years_of_exp)
-        salary_min = 25000
+        salary_min = 20000
         salary_max = 60000
         if salary_min or salary_max:
             self.validate(salary_min)
             self.validate(salary_max)
             self.set_salary(salary_min, salary_max)
-        language = 'English'
         # photos = input('Enter yes/no to show resumes with photo only:\t'
-        photo = 'yes'
-        if photo == 'yes':
-            self.show_photo()
+        # photo = 'yes'
+        # if photo == 'yes':
+        #     self.show_photo()
 
     @staticmethod
     def validate(value):
@@ -100,7 +148,7 @@ class RobotaUaParser:
             try:
                 value = int(value)
             except ValueError:
-                value = input('Enter the integer number:\t')
+                value = input('Enter integer number:\t')
         return value
 
     def set_position(self, position):
@@ -113,9 +161,7 @@ class RobotaUaParser:
         loc_search = self.driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-desktop-filter-city')
         loc_search.click()
         loc_search.find_element(By.TAG_NAME, 'input').send_keys(location)
-        sleep(1)
         loc_search.find_element(By.TAG_NAME, 'li').click()
-        sleep(2)
 
     def set_experience(self, experience):
         filters_elm = self.driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-simple-experience')
@@ -142,19 +188,18 @@ class RobotaUaParser:
         input_elm = range_elm.find_element(By.TAG_NAME, 'lib-input-range')
         min_input, max_input = input_elm.find_elements(By.TAG_NAME, 'input')
         min_input.send_keys(salary_min)
-        sleep(1)
         min_input.send_keys(Keys.RETURN)
         max_input.send_keys(salary_max)
-        sleep(1)
         max_input.send_keys(Keys.RETURN)
-        sleep(5)
 
     def show_photo(self):
         self.driver.execute_script("window.scrollTo(0, document.body.scrollTop);")
         self.driver.find_element(By.TAG_NAME, 'santa-toggler').click()
 
 
-url = 'https://robota.ua/ru/candidates/all/ukraine'
+url = 'https://robota.ua/candidates/all'
+# url = 'https://robota.ua/candidates/data-analyst/ukraine'
+# url = 'https://robota.ua/candidates/data-scientist/ukraine'
 
 p = RobotaUaParser()
 p.parse(url)
