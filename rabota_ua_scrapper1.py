@@ -75,39 +75,25 @@ keywords = ['IT', 'SQLite', 'Наука', 'HTML', 'PostgreSQL', 'Retail']
     # print(cv_page)
 
 
-name = (driver.find_element(By.CLASS_NAME, 'santa-flex-grow').
-        find_element(By.TAG_NAME, 'h1').text)
-position = driver.find_element(By.CLASS_NAME, 'santa-mt-10').text
-#
-# brief_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info')
-# city, age, salary = brief_info.find_elements(By.TAG_NAME, 'p')
-# city = city.text
-# age = age.text
-# salary = salary.text
-#
-print(name)
-print(position)
+# name = (driver.find_element(By.CLASS_NAME, 'santa-flex-grow').
+#         find_element(By.TAG_NAME, 'h1').text)
+# position = driver.find_element(By.CLASS_NAME, 'santa-mt-10').text
+# #
+# # brief_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info')
+# # city, age, salary = brief_info.find_elements(By.TAG_NAME, 'p')
+# # city = city.text
+# # age = age.text
+# # salary = salary.text
+# #
+# print(name)
+# print(position)
 # print(city)
 # print(age)
 # print(salary)
+info = (driver.find_element(By.TAG_NAME, 'lib-resume-main-info').
+        find_element(By.CLASS_NAME, 'santa-typo-secondary')).text
 
-experience_field = (driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-experience').
-                    find_element(By.TAG_NAME, 'p')).text
-
-try:
-    skills = (driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary').
-              find_element(By.CLASS_NAME, 'santa-m-0').text)
-    skills_match = 0
-    for key in keywords:
-        if key in skills:
-            skills_match += 1
-            print(key)
-    print(skills_match)
-except NoSuchElementException:
-    skills_match = 0
-
-print(experience_field)
-print(skills)
+print(info)
 
 # def show_all_checkboxes(self):
 #     filters = self.driver.find_element(By.CLASS_NAME, 'filters-sidebar')
@@ -140,6 +126,29 @@ print(skills)
 #     # [x.click() for x in checkboxes_elm if x.text in keywords]
 
 
+def get_cv_data(self):
+    cv_elements = self.driver.find_elements(By.CLASS_NAME, 'cv-card')
+    print('GET CV_ELEMENTS')
+    for cv in cv_elements:
+        print('GET CV')
+        sleep(2)
+        cv_page_link = (cv.find_element(By.CLASS_NAME, 'santa-no-underline').
+                        get_attribute("href"))
+        cv_info = {}
+        cv_info['position'] = (cv.find_element(By.TAG_NAME, 'alliance-employer-cvdb-card-content-desktop').
+                               find_element(By.TAG_NAME, 'p')).text
+        cv_info['cv_page'] = cv_page_link
+        cv_info['cv_fullness'] = self.get_numbers(cv)
+        if self.keywords:
+            cv_page_link.click()
+            skills_match = self.check_skills()
+            if skills_match:
+                print('CHECK SKILLS')
+                cv_info['key_match'] = skills_match
+                self.result.append(cv_info)
+        else:
+            cv_info['key_match'] = 0
+            self.result.append(cv_info)
 
 
 
