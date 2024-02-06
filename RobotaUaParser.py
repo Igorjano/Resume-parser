@@ -5,6 +5,7 @@ from selenium.common.exceptions import ElementNotInteractableException
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
+from time import sleep
 
 
 class RobotaUaParser:
@@ -13,7 +14,7 @@ class RobotaUaParser:
         self.keywords = None
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
-        self.options.add_argument("--blink-settings=imagesEnabled=false")
+        # self.options.add_argument("--blink-settings=imagesEnabled=false")
         self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
@@ -44,7 +45,7 @@ class RobotaUaParser:
                 self.get_cv_data()
                 next_page = self.driver.find_element(By.CLASS_NAME, 'next')
                 next_page.click()
-                # sleep(1)
+                sleep(1)
                 print('click')
             except NoSuchElementException:
                 print('EXCEPTION IS WORKING')
@@ -62,7 +63,9 @@ class RobotaUaParser:
         cv_elements = self.driver.find_elements(By.CLASS_NAME, 'cv-card')
         print('GET CV_ELEMENTS')
         for cv in cv_elements:
-            self.driver.get(cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href"))
+            sleep(1)
+            page_link = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
+            self.driver.get(page_link)
             if self.keywords:
                 skills_match = self.check_skills()
                 if skills_match:
@@ -87,6 +90,7 @@ class RobotaUaParser:
             self.driver.back()
 
     def get_candidate_info(self, cv, skills_match=0):
+        sleep(2)
         candidate_info = {}
         candidate_info['position'] = cv.find_element(By.TAG_NAME, 'p').text
         candidate_info['name'] = cv.find_element(By.CLASS_NAME, 'santa-pr20').text
@@ -99,6 +103,7 @@ class RobotaUaParser:
                                 get_attribute("href"))
         self.result.append(candidate_info)
         print('GET CANDIDATE!')
+        # self.driver.quit()
 
     # Get numbers from string
     @staticmethod
@@ -120,23 +125,23 @@ class RobotaUaParser:
         if position:
             self.set_position(position)
         # location = input('Location:\t')
-        # location = 'Киев'
-        # if location:
-        #     self.set_location(location)
+        location = 'Киев'
+        if location:
+            self.set_location(location)
         # self.keywords = (input('Enter skills or keywords separated by commas or press Enter:\t')
         #                  .capitalize().split(','))
         # self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
-        years_of_exp = 1
+        # years_of_exp = 10
         # years_of_exp = input('If you want candidates without experience enter 0. Years of experience:\t')
-        if years_of_exp:
-            years_of_exp = self.validate(years_of_exp)
-            self.set_experience(years_of_exp)
-        salary_min = 20000
-        salary_max = 60000
-        if salary_min or salary_max:
-            self.validate(salary_min)
-            self.validate(salary_max)
-            self.set_salary(salary_min, salary_max)
+        # if years_of_exp:
+        #     years_of_exp = self.validate(years_of_exp)
+        #     self.set_experience(years_of_exp)
+        # salary_min = 20000
+        # salary_max = 60000
+        # if salary_min or salary_max:
+        #     self.validate(salary_min)
+        #     self.validate(salary_max)
+        #     self.set_salary(salary_min, salary_max)
         # photos = input('Enter yes/no to show resumes with photo only:\t'
         # photo = 'yes'
         # if photo == 'yes':
