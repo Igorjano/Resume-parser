@@ -16,7 +16,7 @@ class RobotaUaParser:
         self.keywords = None
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
-        self.options.add_argument("--blink-settings=imagesEnabled=false")
+        # self.options.add_argument("--blink-settings=imagesEnabled=false")
         # self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
@@ -27,18 +27,21 @@ class RobotaUaParser:
         print('GET URL')
         self.select_options()
         try:
-            pages_elm = self.driver.find_element(By.TAG_NAME, 'santa-pagination-with-links')
+            pages_elm = self.driver.find_element(By.CLASS_NAME, 'paginator')
             print(F'PAGES ELM = {pages_elm}')
             pages_links = pages_elm.find_elements(By.TAG_NAME, 'a')
+            print(len)
             if len(pages_links) > 5:
                 print('PARSE NEXT PAGES')
                 self.parse_next_page()
             else:
                 print('PARSE PAGES')
-                self.parse_pages(pages_links)
+                self.parse_pages()
         except NoSuchElementException:
+            print('EXCEPTION')
             self.get_cv_links()
         print(self.result)
+        # self.driver.quit()
 
     # If we have more than 5 pages and next button
     def parse_next_page(self):
@@ -57,11 +60,17 @@ class RobotaUaParser:
                 print('STOP')
                 next_page = False
 
-    def parse_pages(self, pages_links):
-        pages = [page.get_attribute('href') for page in pages_links[1: len(pages_links)]]
-        print('PARSE PAGE')
+    def parse_pages(self):
+        pages_elm = self.driver.find_element(By.CLASS_NAME, 'paginator').find_elements(By.TAG_NAME, 'a')
+        pages = [page.get_attribute('href') for page in pages_elm]
+        print(pages)
+        print(pages[0])
+        print(f'PARSE PAGE {pages[0]}')
         self.get_cv_links()
-        for page in pages:
+        print('PAGE WAS PARSED')
+        count = 1
+        for page in pages[1:]:
+            print(f'PARSE PAGE {page}')
             self.driver.get(page)
             self.get_cv_links()
 
@@ -74,18 +83,25 @@ class RobotaUaParser:
         handles = self.driver.window_handles
         self.driver.switch_to.window(handles[1])
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=100) as executor:
             executor.map(self.get_cv_data, links)
-        self.driver.switch_to.window(current_window_handle)
+            self.driver.close()
+            self.driver.switch_to.window(current_window_handle)
+
+
 
     def get_cv_data(self, page_link):
+        print('CV CARD')
+        cv_info = {}
         self.driver.get(page_link)
+        cv_info['name'] = self.driver.find_element(By.CLASS_NAME, 'copy-wrap').text
+        print(cv_info['name'])
         skills_match = self.check_skills()
         if skills_match:
             print('CHECK SKILLS')
             # cv_info['key_match'] = skills_match
             # self.result.append(cv_info)
-            self.driver.close()
+
 
 
 
@@ -215,11 +231,12 @@ class RobotaUaParser:
             return 0
 
     def select_options(self):
+        pass
         # print('Please enter search parameters. If you want to leave fields empty just press Enter')
         # position = input('Job position:\t')
-        position = 'Python developer'
-        if position:
-            self.set_position(position)
+        # position = 'Python developer'
+        # if position:
+        #     self.set_position(position)
         # location = input('Location:\t')
         # location = 'Киев'
         # if location:
@@ -228,24 +245,24 @@ class RobotaUaParser:
         #                  .capitalize().split(','))
         # self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
         # years_of_exp = 10
-        self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
-        years_of_exp = 5
+        # self.keywords = ['IT', 'Django', 'Наука', 'Postgres', 'SQL', 'Big data']
+        # years_of_exp = 5
         # years_of_exp = input('If you want candidates without experience enter 0. Years of experience:\t')
-        if years_of_exp:
-            years_of_exp = self.validate(years_of_exp)
-            self.set_experience(years_of_exp)
+        # if years_of_exp:
+        #     years_of_exp = self.validate(years_of_exp)
+        #     self.set_experience(years_of_exp)
         # salary_min = 20000
         # salary_max = 60000
         # if salary_min or salary_max:
         #     self.validate(salary_min)
         #     self.validate(salary_max)
         #     self.set_salary(salary_min, salary_max)
-        salary_min = 20000
-        salary_max = 60000
-        if salary_min or salary_max:
-            self.validate(salary_min)
-            self.validate(salary_max)
-            self.set_salary(salary_min, salary_max)
+        # salary_min = 20000
+        # salary_max = 60000
+        # if salary_min or salary_max:
+        #     self.validate(salary_min)
+        #     self.validate(salary_max)
+        #     self.set_salary(salary_min, salary_max)
         # photos = input('Enter yes/no to show resumes with photo only:\t'
         # photo = 'yes'
         # if photo == 'yes':
@@ -306,9 +323,10 @@ class RobotaUaParser:
         self.driver.find_element(By.TAG_NAME, 'santa-toggler').click()
 
 
-url = 'https://robota.ua/candidates/all'
+# url = 'https://robota.ua/candidates/all'
 # url = 'https://robota.ua/candidates/data-analyst/ukraine'
 # url = 'https://robota.ua/candidates/data-scientist/ukraine'
+url = 'https://robota.ua/ua/candidates/data-scientist/ukraine?experienceIds=%5B%224%22%5D'
 
 p = RobotaUaParser()
 p.parse(url)
