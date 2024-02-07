@@ -9,146 +9,52 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
 from time import sleep
+from concurrent.futures import ThreadPoolExecutor
 
-# def get_cv_link(cv_elements):
-#     # cv_elements = driver.find_elements(By.CLASS_NAME, 'cv-card')
-#     print('CV-ELEMENTS')
-#     for cv in cv_elements:
-#         position = cv.find_element(By.CLASS_NAME, 'santa-m-0').text
-#         cv_page = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
-#         print(position)
-#         print(cv_page)
 
 options = webdriver.ChromeOptions()
 options.add_argument("--window-size=1366,768")
 options.add_argument("--blink-settings=imagesEnabled=false")
-options.add_argument('--headless=new')
+# options.add_argument('--headless=new')
 
-# url = 'https://robota.ua/ru/candidates/all/ukraine'
+url = 'https://robota.ua/ru/candidates/all/ukraine'
 # url = 'https://robota.ua/ru/candidates/data-analyst/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
 # url = 'https://robota.ua/ru/candidates/data-scientist/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
 # url = 'https://robota.ua/ru/candidates/python-developer/kyiv'
 # url = 'https://robota.ua/candidates/22121161'
-url = 'https://robota.ua/candidates/23012131'
+# url = 'https://robota.ua/candidates/23012131'
+# url = 'https://robota.ua/candidates/20202674'
+# url = 'https://robota.ua/candidates/23196247'
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                           options=options)
 driver.implicitly_wait(10)
 actions = ActionChains(driver)
 driver.get(url)
 
-# driver.find_element(By.CLASS_NAME, 'additional-no-x-indent').click()
-# filters_btn.click()
-# sleep(2)
 
 
-def get_score(cv):
-    try:
-        score_text = cv.find_element(By.TAG_NAME, 'alliance-fillable-resume').text
-        # print(score_text)
-        score = ''
-        for let in score_text:
-            score += let if let.isnumeric() else ''
-            # if let.isnumeric():
-            #     score += let
-        score = int(score)
-    except NoSuchElementException:
-        score = 0
-    return score
 
 
-# filters_cont = driver.find_element(By.CLASS_NAME, 'filter-panel-container')
-keywords = ['IT', 'SQLite', 'Наука', 'HTML', 'PostgreSQL', 'Retail']
 
-# cv_elements = driver.find_elements(By.CLASS_NAME, 'cv-card')
-# print(len(cv_elements))
-# for cv in cv_elements:
-#     position = cv.find_element(By.CLASS_NAME, 'santa-m-0').text
-#     cv_page = cv.find_element(By.CLASS_NAME, 'santa-no-underline').get_attribute("href")
-#     score = get_score(cv)
-#     try:
-    #     score_text = cv.find_element(By., 'alliance-fillable-resume').text
-    # except NoSuchElementException:
-    # score = self.get_score(score_text)
-    # self.get_cv_info(cv_page, score)
-    # print(position)
-    # print(score)
-    # print(cv_page)
-
-
-# name = (driver.find_element(By.CLASS_NAME, 'santa-flex-grow').
-#         find_element(By.TAG_NAME, 'h1').text)
-# position = driver.find_element(By.CLASS_NAME, 'santa-mt-10').text
-# #
-# # brief_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info')
-# # city, age, salary = brief_info.find_elements(By.TAG_NAME, 'p')
-# # city = city.text
-# # age = age.text
-# # salary = salary.text
-# #
-# print(name)
-# print(position)
-# print(city)
-# print(age)
-# print(salary)
-info = (driver.find_element(By.TAG_NAME, 'lib-resume-main-info').
-        find_element(By.CLASS_NAME, 'santa-typo-secondary')).text
-
-print(info)
-
-# def show_all_checkboxes(self):
-#     filters = self.driver.find_element(By.CLASS_NAME, 'filters-sidebar')
-#     self.scroll_screen()
-#     add_btns = filters.find_elements(By.TAG_NAME, 'button')
-#     [btn.click() for btn in add_btns]
-#     sleep(2)
-#     self.driver.execute_script("window.scrollTo(0, document.body.scrollTop);")
+# resume_info_elm = driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-desktop-resume-content')
 #
-#
-# def set_checkboxes(self, keywords):
-#     self.show_all_checkboxes()
-#     filters_elm = self.driver.find_elements(By.TAG_NAME, 'alliance-employer-cvdb-simple-rubric')
-#     list_elm = self.driver.find_elements(By.CLASS_NAME, 'list-item')
-#     for lst in list_elm:
-#         try:
-#             lst.find_element(By.TAG_NAME, 'santa-checkbox').click()
-#             print(f'Click {lst.text}')
-#         except ElementNotInteractableException:
-#             print(f'No click {lst.text}')
-#             continue
-#     # print(len(list_elm))
-#     # filters_elm = self.driver.find_elements(By.CLASS_NAME, 'list-item')
-#     # [x.click() for x in filters_elm if x.text in keywords]
-#     # checkboxes = filters_elm.find_element(By.TAG_NAME, 'input')
-#     # for box in filters_elm:
-#     #     box.find_element(By.TAG_NAME, 'input').click()
-#     # [box.click() for box in checkboxes]
-#
-#     # [x.click() for x in checkboxes_elm if x.text in keywords]
+# print(resume_info_elm.text)
+# print(len(resume_info_elm.text))
+def get_url(link):
+    driver.get(link)
+    sleep(2)
+    driver.close()
+    driver.switch_to.window(current_window_handle)
 
 
-def get_cv_data(self):
-    cv_elements = self.driver.find_elements(By.CLASS_NAME, 'cv-card')
-    print('GET CV_ELEMENTS')
-    for cv in cv_elements:
-        print('GET CV')
-        sleep(2)
-        cv_page_link = (cv.find_element(By.CLASS_NAME, 'santa-no-underline').
-                        get_attribute("href"))
-        cv_info = {}
-        cv_info['position'] = (cv.find_element(By.TAG_NAME, 'alliance-employer-cvdb-card-content-desktop').
-                               find_element(By.TAG_NAME, 'p')).text
-        cv_info['cv_page'] = cv_page_link
-        cv_info['cv_fullness'] = self.get_numbers(cv)
-        if self.keywords:
-            cv_page_link.click()
-            skills_match = self.check_skills()
-            if skills_match:
-                print('CHECK SKILLS')
-                cv_info['key_match'] = skills_match
-                self.result.append(cv_info)
-        else:
-            cv_info['key_match'] = 0
-            self.result.append(cv_info)
+cv_elements = driver.find_elements(By.CLASS_NAME, 'cv-card')
 
+links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elements]
+current_window_handle = driver.current_window_handle
+driver.execute_script("window.open('');")
+handles = driver.window_handles
+driver.switch_to.window(handles[1])
 
+with ThreadPoolExecutor(max_workers=20) as executor:
+    executor.map(get_url, links)
 
