@@ -26,8 +26,8 @@ class RobotaUaParser:
                                        options=self.options)
         self.driver.implicitly_wait(10)
 
-    def __call__(self):
-        self.parse()
+    # def __call__(self):
+    #     self.parse()
 
     def parse(self):
         self.driver.get(self.url)
