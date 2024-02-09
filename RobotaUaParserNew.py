@@ -31,6 +31,7 @@ class RobotaUaParser:
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
         self.driver.implicitly_wait(10)
+        self.window = 1
 
     def parse(self):
         self.driver.get(self.url)
@@ -105,17 +106,24 @@ class RobotaUaParser:
         current_window_handle = self.driver.current_window_handle
         self.driver.execute_script("window.open('');")
         handles = self.driver.window_handles
-        self.driver.switch_to.window(handles[1])
+        self.driver.switch_to.window(handles[self.window])
+
 
         with ThreadPoolExecutor(max_workers=25) as executor:
             executor.map(self.get_cv_data, links)
 
+
+
+
         # for link in links:
         #     self.get_cv_data(link)
-            self.driver.close()
+        #     self.driver.close()
             self.driver.switch_to.window(current_window_handle)
 
+
+
     def get_cv_data(self, page_link):
+        self.window += 1
         self.driver.get(page_link)
         print('CV CARD')
         print(f'GET LINK {page_link}')
@@ -136,6 +144,7 @@ class RobotaUaParser:
         # print(self.result)
         self.candidate_info.clear()
         # print(self.result)
+        self.driver.close()
 
     # def get_brief_info(self):
         brief_info = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info').
