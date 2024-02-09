@@ -12,6 +12,7 @@ from selenium.webdriver.common.keys import Keys
 import json
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import wait
 
 
 class RobotaUaParser:
@@ -30,7 +31,9 @@ class RobotaUaParser:
         # self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
-        self.driver.implicitly_wait(10)
+        self.current_window_handle = None
+        self.window = 1
+        # self.driver.implicitly_wait(10)
 
     def parse(self):
         self.driver.get(self.url)
@@ -44,6 +47,12 @@ class RobotaUaParser:
                 print(len(pages))
                 print('PARSE NEXT PAGES')
                 self.parse_next_btn()
+            else:
+                print('PARSE PAGES')
+                self.parse_pages()
+                self.driver.quit()
+                print(self.result)
+                return self.result
         except (NoSuchElementException, TimeoutException) as e:
             print(e.msg)
             self.get_cv_links()
@@ -58,15 +67,13 @@ class RobotaUaParser:
         next_page = True
         while next_page:
             self.get_cv_links()
-
             try:
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 next_page = (WebDriverWait(self.driver, 20).
                              until(EC.presence_of_element_located((By.CLASS_NAME, 'next'))))
                 print(f"{next_page.get_attribute('href') = }")
-                next_page.click()
                 sleep(1)
-                print('click')
+                WebDriverWait(self.driver, 20).until(EC.element_to_be_clickable(next_page)).click()
                 print('CLICK NEXT PAGE')
             except NoSuchElementException as e:
                 print(e.msg)
@@ -83,12 +90,8 @@ class RobotaUaParser:
                        until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator'))))
         pages_elm = pages_links.find_elements(By.TAG_NAME, 'a')
         pages = [page.get_attribute('href') for page in pages_elm]
-        print(pages)
-        print(pages[0])
         print(f'PARSE PAGE {pages[0]}')
         self.get_cv_links()
-        print('PAGE WAS PARSED')
-        count = 1
         for page in pages[1:]:
             print(f'PARSE PAGE {page}')
             self.driver.get(page)
@@ -98,55 +101,78 @@ class RobotaUaParser:
         print('GET CV LINKS ELEMENTS')
         cv_elm = (WebDriverWait(self.driver, 20).
                   until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'cv-card'))))
-        print('GET LINKS')
         links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elm]
-        print('OPEN NEW TABS')
 
-        current_window_handle = self.driver.current_window_handle
+        self.current_window_handle = self.driver.current_window_handle
         self.driver.execute_script("window.open('');")
         handles = self.driver.window_handles
-        self.driver.switch_to.window(handles[1])
+        self.driver.switch_to.window(handles[self.window])
+        thread_list = []
 
         with ThreadPoolExecutor(max_workers=25) as executor:
-            executor.map(self.get_cv_data, links)
+            thread_list = []
+            for link in links:
+                print(link)
+                thread_list.append((executor.submit(self.get_cv_data, link)))
+            self.window += 1
+            wait(thread_list)
+        self.driver.switch_to.window(self.current_window_handle)
+
+        #     print('EXECUTOR IS WORKING')
+
 
         # for link in links:
         #     self.get_cv_data(link)
-            self.driver.close()
-            self.driver.switch_to.window(current_window_handle)
+        #     # self.driver.close()
+        # self.driver.switch_to.window(self.current_window_handle)
 
     def get_cv_data(self, page_link):
+        print(self.window)
+        self.window += 1
+        # handles = self.driver.window_handles
+        # self.driver.switch_to.window(handles[self.window])
+        candidate_info = {}
+        # current_window_handle = self.driver.current_window_handle
+        # self.driver.execute_script("window.open('');")
+        # # self.window += 1
+        # handles = self.driver.window_handles
+        # self.driver.switch_to.window(handles[self.window])
         self.driver.get(page_link)
+        print(f'OPEN {page_link}')
+        # self.driver.switch_to.window(self.current_window_handle)
         print('CV CARD')
         print(f'GET LINK {page_link}')
         # city, salary, age = self.get_brief_info()
         cv_fullness = self.get_score()
         skills = self.get_skills()
-        self.candidate_info['position'] = (self.driver.find_element(By.TAG_NAME, 'lib-resume-main-info').
-                                           find_element(By.CLASS_NAME, 'santa-typo-secondary ')).text
-        self.candidate_info['name'] = self.driver.find_element(By.CLASS_NAME, 'santa-typo-h2').text
+        candidate_info['position'] = (self.driver.find_element(By.TAG_NAME, 'lib-resume-main-info').
+                                      find_element(By.CLASS_NAME, 'santa-typo-secondary ')).text
+        candidate_info['name'] = self.driver.find_element(By.CLASS_NAME, 'santa-typo-h2').text
         # self.candidate_info['city'] = city
         # self.candidate_info['expected_salary'] = salary
         # self.candidate_info['age'] = age
-        self.candidate_info['cv_fullness'] = cv_fullness
-        self.candidate_info['cv_page'] = page_link
-        self.candidate_info['skills'] = skills
-        self.result.append(self.candidate_info)
-        print(self.candidate_info)
-        # print(self.result)
-        self.candidate_info.clear()
+        candidate_info['cv_fullness'] = cv_fullness
+        candidate_info['cv_page'] = page_link
+        candidate_info['skills'] = skills
+        self.result.append(candidate_info)
+
         # print(self.result)
 
+        # print(self.result)
+        # self.driver.close()
+        # self.window += 1
+
+
     # def get_brief_info(self):
-        brief_info = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info').
-                      find_elements(By.TAG_NAME, 'p'))
-        if len(brief_info) < 3:
-            city, age = brief_info
-            salary = 0
-        else:
-            city, salary, age = brief_info
-            salary = salary.text
-        return city, salary, age
+    #     brief_info = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info').
+    #                   find_elements(By.TAG_NAME, 'p'))
+    #     if len(brief_info) < 3:
+    #         city, age = brief_info
+    #         salary = 0
+    #     else:
+    #         city, salary, age = brief_info
+    #         salary = salary.text
+    #     return city, salary, age
 
     def get_score(self):
         prof_info = self.driver.find_element(By.TAG_NAME, 'alliance-employer-resume-prof-info')
@@ -157,15 +183,12 @@ class RobotaUaParser:
 
         cv_fullness = len(headers_h3) * 5 + len(headers_h4) * 4 + len(p) * 0.2 + len(ul) * 0.2
 
-        return cv_fullness
+        return int(cv_fullness)
 
     def get_skills(self):
-        skills_elm = self.driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary')
-        skills = skills_elm.find_elements(By.TAG_NAME, 'p')
-        if not skills:
-            skills = skills_elm.find_elements(By.TAG_NAME, 'ul')
+        skills = self.driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary').text.split()
 
-        return [[].append(skill) for skill in skills]
+        return skills
 
     def set_options(self):
         self.set_category()
@@ -173,14 +196,14 @@ class RobotaUaParser:
         self.set_location()
         self.set_experience()
         self.set_salary()
-        sleep(5)
+        sleep(1)
 
     def set_category(self):
-        category = input('Choose category in what you want to search:\n1 - CV name\n2 - skills or keywords\t')
-        # category = '2'
-        # search_text = 'Python developer'
+        # category = input('Choose category in what you want to search:\n1 - CV name\n2 - skills or keywords\t')
+        category = '1'
+        search_text = 'Data analyst'
         if category == '1':
-            search_text = input('What position are you looking for:\t')
+            # search_text = input('What position are you looking for:\t')
             self.set_search_text(search_text)
         elif category == '2':
             search_text = input('What skills are you looking for:\t')
@@ -286,6 +309,7 @@ class RobotaUaParser:
         sleep(2)
         self.driver.execute_script("window.scrollTo(0, document.body.scrollTop);")
         self.driver.find_element(By.TAG_NAME, 'santa-toggler').click()
+
 
 p = RobotaUaParser()
 p.parse()
