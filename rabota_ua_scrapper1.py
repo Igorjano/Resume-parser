@@ -28,8 +28,9 @@ options.add_argument('--headless=new')
 # url = 'https://robota.ua/candidates/23196247'
 # url = 'https://robota.ua/candidates/22711696'
 # url = 'https://robota.ua/candidates/22867203'
-# url = 'https://robota.ua/candidates/23012131'
-url = 'https://robota.ua/candidates/23018283'
+url = 'https://robota.ua/candidates/23012131'
+# url = 'https://robota.ua/candidates/23018283'
+# url = 'https://robota.ua/candidates/23061108'
 
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                           options=options)
@@ -56,34 +57,43 @@ def extract_data(lst):
 
 
 prof_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-prof-info')
-exp_info = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-experience')
-skills = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary')
+# exp_info = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-experience')
+# skills = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary')
+#
+# education = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-education')
+# courses = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-courses')
+# add_info = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-additional')
 
-education = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-education')
-courses = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-courses')
-add_info = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-additional')
-
-main_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info')
-brief_info = main_info.find_elements(By.TAG_NAME, 'p')
-
-for info in brief_info:
-    print(info.text)
-
-cv = {}
-if len(brief_info) < 3:
-    city, age = brief_info
-    salary = 0
-else:
-    city, salary, age = brief_info
-    salary = salary.text
-
-cv['city'] = city.text
-cv['expected_salary'] = salary
-cv['age'] = age.text
-
-print(cv)
+# main_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-brief-info')
+# brief_info = main_info.find_elements(By.TAG_NAME, 'p')
+# city = brief_info[0].text
+# age = 'not specified'
+# if len(brief_info) > 1
 
 
+# print(city, age)
+
+
+# print(skills.text)
+# for info in brief_info:
+#     print(info.text)
+#
+# cv = {}
+# if len(brief_info) < 3:
+#     city, age = brief_info
+#     salary = 0
+# else:
+#     city, salary, age = brief_info
+#     salary = salary.text
+#
+# cv['city'] = city.text
+# cv['expected_salary'] = salary
+# cv['age'] = age.text
+#
+# print(cv)
+
+# key_info = driver.find_element(By.XPATH, "*//[contain(text(), 'Ключова інформация')]")
+# print(key_info)
 
 headers_h3 = prof_info.find_elements(By.TAG_NAME, 'h3')
 headers_h4 = prof_info.find_elements(By.TAG_NAME, 'h4')
@@ -91,7 +101,10 @@ p = prof_info.find_elements(By.TAG_NAME, 'p')
 ul = prof_info.find_elements(By.TAG_NAME, 'ul')
 # print(add_info.text)
 
+current_window_handle = driver.current_window_handle
+handles = driver.window_handles
 
+# print(handles)
 
 # print(extract_data(exp_info))
 # print(extract_data(skills))
