@@ -97,7 +97,7 @@ class RobotaUaParser:
     def get_cv_links(self):
         print('GET CV LINKS ELEMENTS')
         cv_elms = (WebDriverWait(self.driver, 20).
-                  until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'cv-card'))))
+                   until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'cv-card'))))
         links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elms]
         self.current_window_handle = self.driver.current_window_handle
 

@@ -14,15 +14,17 @@ options.add_argument("--window-size=1366,768")
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                           options=options)
 driver.implicitly_wait(10)
-
-url = 'https://www.work.ua/resumes/?ss=1'
-# url = 'https://www.work.ua/resumes/9125228/'
-
-driver.get(url)
-
-pages_links = driver.find_elements(By.TAG_NAME, 'nav')[-1]
-next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default').click()
-sleep(2)
+#
+# url = 'https://www.work.ua/resumes/?ss=1'
+# # url = 'https://www.work.ua/resumes/9125228/'
+#
+# driver.get(url)
+#
+# pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
+# next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
+# next_btn.click()
+#
+# sleep(4)
 
 # print(next_btn.text)
 # [print(page.text) for page in next_btn]
@@ -52,6 +54,10 @@ sleep(2)
 #
 # skills = cv_info.find_elements(By.CLASS_NAME, 'flex')[1].text.strip()
 # # print(skills)
+
+a = 'python, sql numpy'
+
+print('python' in a)
 
 
 

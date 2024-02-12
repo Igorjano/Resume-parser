@@ -17,6 +17,7 @@ class WorkUaParser:
         self.url = 'https://www.work.ua/resumes/?ss=1'
         self.result = []
         self.candidate_info = {}
+        self.keywords = None
         self.location = None
         self.years_of_exp = None
         self.salary_min = None
@@ -31,17 +32,17 @@ class WorkUaParser:
 
     def parse(self):
         self.driver.get(self.url)
-        # self.set_options()
+        self.set_options()
         next_btn = True
         while next_btn:
             self.get_cv_links()
             try:
                 pages_links = (WebDriverWait(self.driver, 20).
-                               until(EC.presence_of_all_elements_located((By.TAG_NAME, 'nav'))))
-                next_btn = pages_links[-1].find_element(By.CLASS_NAME, 'add-left-default')
+                               until(EC.element_to_be_clickable((By.CLASS_NAME, 'pagination'))))
+                next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
                 print(next_btn.get_attribute('href'))
                 next_btn.click()
-                # sleep(1)
+                sleep(1)
                 print('PARSE NEXT PAGES')
             except (NoSuchElementException, TimeoutException) as e:
                 print(e.msg)
@@ -51,8 +52,6 @@ class WorkUaParser:
                 # self.upload_results()
                 print(self.result)
                 next_btn = False
-
-            return self.result
 
     def get_cv_links(self):
         print('GET CV LINKS ELEMENTS')
@@ -82,13 +81,14 @@ class WorkUaParser:
         candidate_info['position'] = self.driver.find_element(By.TAG_NAME, 'h2').text
         candidate_info['name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
         candidate_info['cv_fullness'] = self.get_score()
+
         # candidate_info['city'] = city
         # candidate_info['age'] = age
         candidate_info['cv_page'] = page_link
         candidate_info['skills'] = self.get_skills()
-
+        if self.keywords:
+            candidate_info['skill_match'] = self.check_skills(candidate_info['skills'])
         print(candidate_info)
-
         self.driver.close()
 
     def get_skills(self):
@@ -97,8 +97,16 @@ class WorkUaParser:
                       find_elements(By.CLASS_NAME, 'flex')[1].text.replace('\n', ', '))
         except IndexError:
             skills = 'not specified'
-
         return skills
+
+    def check_skills(self, skills):
+        match = 0
+        for word in self.keywords:
+            if word.capitalize() in skills:
+                print('MATCH')
+                match += 1
+        return match
+
 
     def get_score(self):
         # Get the number of filled sections in the summary
@@ -110,6 +118,13 @@ class WorkUaParser:
 
         # Assign different numbers of points for different sections and calculate cv fullness
         cv_fullness = headers * 3 + paragraphs * 1 + brief_info * 5
+
+        try:
+            if self.driver.find_element(By.CLASS_NAME, 'resume-preview'):
+                print('RESUME')
+                cv_fullness += 20
+        except NoSuchElementException as e:
+            print(e.msg)
 
         return int(cv_fullness)
 
@@ -139,8 +154,9 @@ class WorkUaParser:
             search_text = input('What position are you looking for:\t')
             self.set_search_text(search_text)
         elif category == '2':
-            search_text = input('What skills are you looking for:\t')
             self.switch_category()
+            search_text = input('What skills are you looking for:\t')
+            self.keywords = search_text.split()
             self.set_search_text(search_text)
         else:
             print('Please make your choice')
@@ -224,8 +240,11 @@ class WorkUaParser:
                 # sleep(1)
 
     def set_salary(self):
-        salary_elms = (self.driver.find_element(By.ID, 'experience_selection').
-                        find_elements(By.CLASS_NAME, 'checkbox'))
+        try:
+            salary_elms = (self.driver.find_element(By.ID, 'experience_selection').
+                           find_elements(By.CLASS_NAME, 'checkbox'))
+        except NoSuchElementException as e:
+            print(e.msg)
 
     @staticmethod
     def validate(value):
