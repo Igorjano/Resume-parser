@@ -16,7 +16,6 @@ class WorkUaParser:
     def __init__(self):
         self.url = 'https://www.work.ua/resumes/?ss=1'
         self.result = []
-        self.candidate_info = {}
         self.keywords = None
         self.location = None
         self.years_of_exp = None
@@ -63,15 +62,12 @@ class WorkUaParser:
             self.driver.execute_script("window.open('');")
             handles = self.driver.window_handles
             self.driver.switch_to.window(handles[1])
-            # self.result.append(self.get_cv_data(link))
             self.get_cv_data(link)
             self.driver.switch_to.window(current_window_handle)
 
     def get_cv_data(self, page_link):
         self.driver.get(page_link)
         print(f'OPEN {page_link}')
-        print('CV CARD')
-        print(f'GET LINK {page_link}')
 
         candidate_info = {}
         # cv_info = self.driver.find_element(By.CLASS_NAME, 'card')

@@ -2,6 +2,11 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import NoSuchElementException
+
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
 from time import sleep
@@ -16,16 +21,30 @@ driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install())
                           options=options)
 driver.implicitly_wait(10)
 #
-url = 'https://www.work.ua/resumes/?ss=1'
+# url = 'https://www.work.ua/resumes/?ss=1'
 # # url = 'https://www.work.ua/resumes/9125228/'
+url = 'https://www.work.ua/resumes-dnipro-data+scientist/?employment=75&experience=166'
 #
 driver.get(url)
 #
 # pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
 # next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
 # next_btn.click()
-#
-# sleep(4)
+next_btn = True
+while next_btn:
+    try:
+        pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
+        next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
+        WebDriverWait(driver, 10).until(EC.url_changes(next_btn))
+        next_btn.click()
+        print('CLICK')
+        sleep(1)
+    except NoSuchElementException:
+        print('EXIT')
+        next_btn = False
+print('DONE')
+
+
 
 # print(next_btn.text)
 # [print(page.text) for page in next_btn]
@@ -40,12 +59,7 @@ driver.get(url)
 # print(position.text)
 
 
-loc_search = driver.find_element(By.ID, 'city')
-loc_search.click()
-# loc_search.find_element(By.CLASS_NAME, 'link-close').click()
-loc_search.send_keys(Keys.CONTROL, 'a')
-loc_search.send_keys(Keys.DELETE)
-sleep(1)
+
 # headers = cv_info.find_elements(By.TAG_NAME, 'h2')
 # for header in headers:
 #     print(header.find_elements(By.CLASS_NAME, 'h4'))
