@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
 from time import sleep
@@ -15,10 +16,10 @@ driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install())
                           options=options)
 driver.implicitly_wait(10)
 #
-# url = 'https://www.work.ua/resumes/?ss=1'
+url = 'https://www.work.ua/resumes/?ss=1'
 # # url = 'https://www.work.ua/resumes/9125228/'
 #
-# driver.get(url)
+driver.get(url)
 #
 # pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
 # next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
@@ -38,6 +39,13 @@ driver.implicitly_wait(10)
 # position = cv_info.find_element(By.TAG_NAME, 'h2')
 # print(position.text)
 
+
+loc_search = driver.find_element(By.ID, 'city')
+loc_search.click()
+# loc_search.find_element(By.CLASS_NAME, 'link-close').click()
+loc_search.send_keys(Keys.CONTROL, 'a')
+loc_search.send_keys(Keys.DELETE)
+sleep(1)
 # headers = cv_info.find_elements(By.TAG_NAME, 'h2')
 # for header in headers:
 #     print(header.find_elements(By.CLASS_NAME, 'h4'))
@@ -55,9 +63,6 @@ driver.implicitly_wait(10)
 # skills = cv_info.find_elements(By.CLASS_NAME, 'flex')[1].text.strip()
 # # print(skills)
 
-a = 'python, sql numpy'
-
-print('python' in a)
 
 
 

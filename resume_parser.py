@@ -23,8 +23,8 @@ def source_choice(number):
 
 parser = source_choice(num)
 print(parser)
-# candidates = parser.parse()
-# candidates = source_choice(source).parse()
+candidates = parser.parse()
+# candidates = .parse()
 
 
 

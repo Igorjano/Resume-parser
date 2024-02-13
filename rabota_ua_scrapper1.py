@@ -19,7 +19,7 @@ options.add_argument('--headless=new')
 
 
 # url = 'https://robota.ua/ru/candidates/all/ukraine'
-# url = 'https://robota.ua/ru/candidates/data-analyst/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
+url = 'https://robota.ua/ru/candidates/data-analyst/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
 # url = 'https://robota.ua/ru/candidates/data-scientist/ukraine?salary=%7B%22from%22%3A50%2C%22to%22%3Anull%7D'
 # url = 'https://robota.ua/ru/candidates/python-developer/kyiv'
 # url = 'https://robota.ua/candidates/22121161'
@@ -28,7 +28,7 @@ options.add_argument('--headless=new')
 # url = 'https://robota.ua/candidates/23196247'
 # url = 'https://robota.ua/candidates/22711696'
 # url = 'https://robota.ua/candidates/22867203'
-url = 'https://robota.ua/candidates/23012131'
+# url = 'https://robota.ua/candidates/23012131'
 # url = 'https://robota.ua/candidates/23018283'
 # url = 'https://robota.ua/candidates/23061108'
 
@@ -56,7 +56,7 @@ def extract_data(lst):
     return res
 
 
-prof_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-prof-info')
+# prof_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-prof-info')
 # exp_info = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-experience')
 # skills = driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary')
 #
@@ -73,46 +73,12 @@ prof_info = driver.find_element(By.TAG_NAME, 'alliance-employer-resume-prof-info
 
 # print(city, age)
 
-
+pages = driver.find_element(By.CLASS_NAME, 'paginator').find_elements(By.TAG_NAME, 'a')
+print(len(pages))
 # print(skills.text)
 # for info in brief_info:
 #     print(info.text)
 #
-# cv = {}
-# if len(brief_info) < 3:
-#     city, age = brief_info
-#     salary = 0
-# else:
-#     city, salary, age = brief_info
-#     salary = salary.text
-#
-# cv['city'] = city.text
-# cv['expected_salary'] = salary
-# cv['age'] = age.text
-#
-# print(cv)
-
-# key_info = driver.find_element(By.XPATH, "*//[contain(text(), 'Ключова інформация')]")
-# print(key_info)
-
-headers_h3 = prof_info.find_elements(By.TAG_NAME, 'h3')
-headers_h4 = prof_info.find_elements(By.TAG_NAME, 'h4')
-p = prof_info.find_elements(By.TAG_NAME, 'p')
-ul = prof_info.find_elements(By.TAG_NAME, 'ul')
-# print(add_info.text)
-
-current_window_handle = driver.current_window_handle
-handles = driver.window_handles
-
-# print(handles)
-
-# print(extract_data(exp_info))
-# print(extract_data(skills))
-# print(extract_data(education))
-# print(extract_data(courses))
-# print(extract_data(add_info))
-# print(p.text)
-# [print(len(t.text)) for t in p]
 # for text in headers:
 #     print(text.text)
 # print(f'HEADERS H3: {len(headers_h3)}')
