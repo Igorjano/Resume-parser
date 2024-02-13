@@ -10,6 +10,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import ElementNotInteractableException
 from selenium.common.exceptions import StaleElementReferenceException
 from time import sleep
+import json
 
 
 class WorkUaParser:
@@ -33,6 +34,8 @@ class WorkUaParser:
     def parse(self):
         self.driver.get(self.url)
         self.set_options()
+        self.get_number_of_cv()
+        print('Downloading resume ...')
         next_btn = True
         while next_btn:
             self.get_cv_links()
@@ -77,8 +80,8 @@ class WorkUaParser:
         # cv_info = self.driver.find_element(By.CLASS_NAME, 'card')
         candidate_info['position'] = self.driver.find_element(By.TAG_NAME, 'h2').text
         candidate_info['name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
-        candidate_info['cv_fullness'] = self.get_score()
         candidate_info['cv_page'] = page_link
+        candidate_info['cv_fullness'] = self.get_score()
         candidate_info['skills'] = self.get_skills()
         if self.keywords:
             candidate_info['skill_match'] = self.check_skills(candidate_info['skills'])
@@ -126,9 +129,11 @@ class WorkUaParser:
     def set_options(self):
         self.set_category()
         self.select_options()
+        print('Setting options ...')
         self.set_location()
         self.set_experience()
         self.set_salary()
+        print('Searching ...')
         sleep(3)
 
     def set_category(self):
@@ -246,6 +251,16 @@ class WorkUaParser:
     def exception_error(self):
         print('Something went wrong... Please try again')
         self.set_options()
+
+    def get_number_of_cv(self):
+        number = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-search-header').
+                  find_element(By.CLASS_NAME, 'santa-text-red-500')).text
+        print(f'Was found {number} resume')
+
+    def upload_to_json(self):
+        with open('candidates_work_ua.json', 'w', encoding="utf-8") as json_file:
+            json.dump(self.result, json_file, ensure_ascii=False, indent=4)
+        print('Resumes was received successfully!')
 
 
 p = WorkUaParser()
