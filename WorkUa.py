@@ -39,65 +39,64 @@ class WorkUaParser:
         while next_btn:
             self.get_cv_links()
             try:
-                pages_links = self.driver.find_element(By.CLASS_NAME, 'pagination')
-                next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
-                print(next_btn.get_attribute('href'))
-                next_btn.click()
-                sleep(1)
-                print('PARSE NEXT PAGES')
-            except (NoSuchElementException, TimeoutException) as e:
-                print(e.msg)
-                # self.get_cv_links()
-                print(self.result)
+                next_btn = (self.driver.find_element(By.CLASS_NAME, 'pagination').
+                            find_element(By.CLASS_NAME, 'add-left-default'))
+                next_btn_link = next_btn.find_element(By.TAG_NAME, 'a').get_attribute('href')
+                self.driver.get(next_btn_link)
+                # sleep(1)
+            except NoSuchElementException:
                 self.driver.quit()
-                # self.upload_results()
-                print(self.result)
-                next_btn = False
+                self.upload_to_json()
+                return self.result
 
     def get_cv_links(self):
-        print('GET CV LINKS ELEMENTS')
-        cv_elms = (WebDriverWait(self.driver, 20).
-                   until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'resume-link'))))
-        links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elms]
+        try:
+            cv_elms = (WebDriverWait(self.driver, 20).
+                           until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'resume-link'))))
+            links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elms]
 
-        current_window_handle = self.driver.current_window_handle
-        for link in links:
-            self.driver.execute_script("window.open('');")
-            handles = self.driver.window_handles
-            self.driver.switch_to.window(handles[1])
-            self.get_cv_data(link)
-            self.driver.switch_to.window(current_window_handle)
+            current_window_handle = self.driver.current_window_handle
+            for link in links:
+                self.driver.execute_script("window.open('');")
+                handles = self.driver.window_handles
+                self.driver.switch_to.window(handles[1])
+                self.get_cv_data(link)
+                self.driver.close()
+                self.driver.switch_to.window(current_window_handle)
+        except NoSuchElementException:
+            print('Oops! Something went wrong .. Try again')
+            self.driver.quit()
+        except TimeoutException:
+            print('There are no candidates according to the given criteria')
+            self.driver.quit()
 
     def get_cv_data(self, page_link):
         self.driver.get(page_link)
-        print(f'OPEN {page_link}')
-
         candidate_info = {}
-        # cv_info = self.driver.find_element(By.CLASS_NAME, 'card')
+
         candidate_info['position'] = self.driver.find_element(By.TAG_NAME, 'h2').text
         candidate_info['name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
         candidate_info['cv_page'] = page_link
         candidate_info['cv_fullness'] = self.get_score()
-        candidate_info['skills'] = self.get_skills()
+        candidate_info['skills'], candidate_info['skills_num'] = self.get_skills()
         if self.keywords:
             candidate_info['skill_match'] = self.check_skills(candidate_info['skills'])
         self.result.append(candidate_info)
-        print(candidate_info)
-        self.driver.close()
 
     def get_skills(self):
         try:
             skills = (self.driver.find_element(By.CLASS_NAME, 'card').
                       find_elements(By.CLASS_NAME, 'flex')[1].text.replace('\n', ', '))
+            skills_num = len(skills)
         except IndexError:
             skills = 'not specified'
-        return skills
+            skills_num = 0
+        return skills, skills_num
 
     def check_skills(self, skills):
         match = 0
         for word in self.keywords:
             if word.capitalize() in skills:
-                print(word)
                 match += 1
         return match
 
@@ -113,11 +112,11 @@ class WorkUaParser:
         # Assign different numbers of points for different sections and calculate cv fullness
         cv_fullness = headers * 2 + paragraphs * 1 + brief_info * 5
 
+        # Check if a resume was added there
         try:
             if self.driver.find_element(By.CLASS_NAME, 'resume-preview'):
-                print('RESUME')
                 cv_fullness += 20
-        except NoSuchElementException as e:
+        except NoSuchElementException:
             pass
 
         return int(cv_fullness)
@@ -130,14 +129,12 @@ class WorkUaParser:
         self.set_experience()
         self.set_salary()
         print('Searching ...')
-        sleep(3)
+        sleep(1)
 
     def set_category(self):
-        # category = input('Choose category in what you want to search:\n1 - Job position\n2 - Skills or keywords\t')
-        category = '1'
-        search_text = 'Data scientist'
+        category = input('Choose category in what you want to search:\n1 - Job position\n2 - Skills or keywords\t')
         if category == '1':
-            # search_text = input('What position are you looking for:\t')
+            search_text = input('What position are you looking for:\t')
             self.set_search_text(search_text)
         elif category == '2':
             self.switch_category()
@@ -154,9 +151,9 @@ class WorkUaParser:
         search_input.send_keys(Keys.RETURN)
         sleep(1)
 
+    # Switch category for search everywhere on the text
     def switch_category(self):
         for i in range(3):
-            # filter_elm = self.driver.find_element(By.CLASS_NAME, 'filters-controls-container')
             filter_elm = (WebDriverWait(self.driver, 20).
                           until(EC.presence_of_element_located((By.CLASS_NAME, 'filters-controls-container'))))
             search_elms = filter_elm.find_elements(By.CLASS_NAME, 'form-group')[-1]
@@ -167,13 +164,11 @@ class WorkUaParser:
     def select_options(self):
         print('Please enter search additional parameters. If you want to leave fields empty just press Enter')
 
-        # location = input('Location:\t')
-        location = 'київ'
+        location = input('Location:\t')
         if location != '':
             self.location = location
 
-        # years_of_exp = input('If you want only candidates without experience enter 0. Years of experience:\t')
-        years_of_exp = 1
+        years_of_exp = input('If you want only candidates without experience enter 0. Years of experience:\t')
         if years_of_exp != '':
             self.years_of_exp = self.validate(years_of_exp)
 
@@ -184,9 +179,9 @@ class WorkUaParser:
         # if salary_max != '':
         #     self.salary_max = self.validate(salary_max)
         #
-        # photos = input('Enter yes/no to show resumes with photo only:\t')
-        # if photos == 'yes':
-        #     self.show_photo()
+        photos = input('Enter yes/no to show resumes with photo only:\t')
+        if photos == 'yes':
+            self.show_photo()
 
     def set_location(self):
         if self.location:
@@ -199,9 +194,9 @@ class WorkUaParser:
                 loc_search.send_keys(Keys.RETURN)
                 loc_search.send_keys(Keys.RETURN)
                 sleep(1)
-            except StaleElementReferenceException as e:
-                print('LOCATION EXCEPTION')
-                print(e.msg)
+            except NoSuchElementException:
+                print('You enter the wrong location! Location set to all Ukraine')
+            except StaleElementReferenceException:
                 print('Something went wrong... Please try again')
 
     def set_experience(self):
@@ -220,17 +215,15 @@ class WorkUaParser:
                 elif self.years_of_exp >= 5:
                     exp_elms[4].click()
                 sleep(1)
-            except (NoSuchElementException, StaleElementReferenceException) as e:
-                print('EXPERIENCE EXCEPTION')
-                print(e.msg)
+            except (NoSuchElementException, StaleElementReferenceException):
+                print('There are some trouble. Experience was not set')
 
     def set_salary(self):
         try:
             salary_elms = (self.driver.find_element(By.ID, 'experience_selection').
                            find_elements(By.CLASS_NAME, 'checkbox'))
-        except NoSuchElementException as e:
-            print(e.msg)
-            print('SALARY EXCEPTION')
+        except NoSuchElementException:
+            print('No such salary in the list')
 
     @staticmethod
     def validate(value):
@@ -244,20 +237,16 @@ class WorkUaParser:
     def show_photo(self):
         self.driver.find_element(By.ID, 'photo_selection').click()
 
-    def exception_error(self):
-        print('Something went wrong... Please try again')
-        self.set_options()
-
     def get_number_of_cv(self):
-        number = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-search-header').
-                  find_element(By.CLASS_NAME, 'santa-text-red-500')).text
-        print(f'Was found {number} resume')
+        number_elm = self.driver.find_element(By.TAG_NAME, 'h1').text
+        number = ''.join([num for num in number_elm if num.isdigit()])
+        print(f'Was found {number} candidate(-tes)')
 
     def upload_to_json(self):
-        with open('candidates_work_ua.json', 'w', encoding="utf-8") as json_file:
+        with open('candidates.json', 'w', encoding="utf-8") as json_file:
             json.dump(self.result, json_file, ensure_ascii=False, indent=4)
-        print('Resumes was received successfully!')
+        print('Resumes was download successfully!')
 
 
-p = WorkUaParser()
-p.parse()
+# p = WorkUaParser()
+# p.parse()

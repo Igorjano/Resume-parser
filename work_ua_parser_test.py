@@ -30,21 +30,23 @@ driver.get(url)
 # pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
 # next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
 # next_btn.click()
-next_btn = True
-while next_btn:
-    try:
-        pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
-        next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
-        WebDriverWait(driver, 10).until(EC.url_changes(next_btn))
-        next_btn.click()
-        print('CLICK')
-        sleep(1)
-    except NoSuchElementException:
-        print('EXIT')
-        next_btn = False
-print('DONE')
+# next_btn = True
+# while next_btn:
+#     try:
+#         next_btn = (driver.find_element(By.CLASS_NAME, 'pagination').
+#                     find_element(By.CLASS_NAME, 'add-left-default'))
+#         next_link = next_btn.find_element(By.TAG_NAME, 'a').get_attribute('href')
+#         print(next_link)
+#         driver.get(next_link)
+#         print('CLICK')
+#         sleep(1)
+#     except NoSuchElementException:
+#         print('EXIT')
+#         next_btn = False
+# print('DONE')
 
-
+number = driver.find_element(By.ID, 'salaryfrom_selection').text
+print(number.split())
 
 # print(next_btn.text)
 # [print(page.text) for page in next_btn]

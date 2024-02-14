@@ -46,14 +46,11 @@ class RobotaUaParser:
                 self.parse_next_btn()
             else:
                 self.parse_pages(len(pages))
-        except NoSuchElementException as e:
-            print(e.msg)
-            print('PAGINATOR EXCEPTION')
+        except NoSuchElementException:
             self.driver.quit()
             self.upload_to_json()
             return self.result
-        except TimeoutException as e:
-            print(e.msg)
+        except TimeoutException:
             print('Ops! Something wrong with the server')
 
     # If we have more than 5 pages use next button for navigation
@@ -67,12 +64,7 @@ class RobotaUaParser:
                 print(f"{next_btn.get_attribute('href') = }")
                 next_btn.click()
                 self.get_cv_links()
-            except NoSuchElementException as e:
-                print(e.msg)
-                print('NEXT PAGE EXCEPTION')
-                next_btn = False
-            except TimeoutException as e:
-                print(e.msg)
+            except (NoSuchElementException, TimeoutException):
                 next_btn = False
 
         self.driver.quit()
@@ -103,15 +95,14 @@ class RobotaUaParser:
                 handles = self.driver.window_handles
                 self.driver.switch_to.window(handles[1])
                 self.get_cv_data(link)
-                # self.driver.close()
+                self.driver.close()
                 self.driver.switch_to.window(current_window_handle)
-        except NoSuchElementException as e:
-            print(e.msg)
-            print('GET CV LINKS EXCEPTION')
+        except NoSuchElementException:
+            print('Oops! Something went wrong .. Try again')
+            self.driver.quit()
+        except TimeoutException:
             print('There are no candidates according to the given criteria')
-        except TimeoutException as e:
-            print(e.msg)
-            print('Ops! Something wrong with the server')
+            self.driver.quit()
 
     def get_cv_data(self, page_link):
         self.driver.get(page_link)
@@ -122,14 +113,12 @@ class RobotaUaParser:
         candidate_info['position'] = (position_elm.
                                       find_element(By.CLASS_NAME, 'santa-typo-secondary ')).text
         candidate_info['name'] = self.driver.find_element(By.CLASS_NAME, 'santa-typo-h2').text
-        candidate_info['cv_fullness'] = self.get_score()
         candidate_info['cv_page'] = page_link
-        candidate_info['skills'] = self.get_skills()
+        candidate_info['cv_fullness'] = self.get_score()
+        candidate_info['skills'], candidate_info['skills_num'] = self.get_skills()
         if self.keywords:
             candidate_info['skills_match'] = self.check_skills(candidate_info['skills'])
-        # print(candidate_info)
         self.result.append(candidate_info)
-        self.driver.close()
 
     # Assign different number of points for different sections and calculate cv fullness
     def get_score(self):
@@ -150,10 +139,12 @@ class RobotaUaParser:
     def get_skills(self):
         skills = (self.driver.find_element(By.TAG_NAME, 'alliance-shared-ui-prof-resume-skill-summary').text
                   .replace('\n', ' ').replace('ключова інформація', ''))
+        skills_num = len(skills)
         if skills == '':
             skills = 'not specified'
+            skills_num = 0
 
-        return skills
+        return skills, skills_num
 
     def check_skills(self, skills):
         match = 0
@@ -192,7 +183,6 @@ class RobotaUaParser:
         search_input = (self.driver.find_element(By.TAG_NAME, 'santa-suggest-input')
                         .find_element(By.TAG_NAME, 'input'))
         search_input.send_keys(text)
-
         search_input.send_keys(Keys.RETURN)
         sleep(1)
 
@@ -204,25 +194,22 @@ class RobotaUaParser:
         try:
             category = category_list.find_elements(By.TAG_NAME, 'p')
             category[4].click()
-        except StaleElementReferenceException as e:
-            print('CATEGORY EXCEPTION')
-            print(e.msg)
+        except StaleElementReferenceException:
+            print('Something wrong with the category')
+
 
     def select_options(self):
         print('Please enter search additional parameters. If you want to leave fields empty just press Enter')
 
         location = input('Location:\t')
-        # location = 'київ'
         if location != '':
             self.location = location
 
         years_of_exp = input('If you want only candidates without experience enter 0. Years of experience:\t')
-        # years_of_exp = 1
         if years_of_exp != '':
             self.years_of_exp = self.validate(years_of_exp)
 
         salary_min = input('Enter min salary expected:\t')
-        # salary_min = 12000
         if salary_min != '':
             self.salary_min = self.validate(salary_min)
         salary_max = input('Enter max salary expected:\t')
@@ -230,7 +217,6 @@ class RobotaUaParser:
             self.salary_max = self.validate(salary_max)
 
         photos = input('Enter yes/no to show resumes with photo only:\t')
-        photos = 'yes'
         if photos == 'yes':
             self.show_photo()
 
@@ -243,10 +229,9 @@ class RobotaUaParser:
             sleep(2)
             try:
                 loc_search.find_element(By.TAG_NAME, 'li').click()
-            except StaleElementReferenceException as e:
-                print('EXCEPT SET LOCATION')
-                print(e.msg)
-            except NoSuchElementException as e:
+            except StaleElementReferenceException:
+                print('Something went wrong... Please try again')
+            except NoSuchElementException:
                 print('You enter the wrong location! Location set to all Ukraine')
 
     def set_experience(self):
@@ -302,15 +287,11 @@ class RobotaUaParser:
                   find_element(By.CLASS_NAME, 'santa-text-red-500')).text
         print(f'Was found {number} candidate(-tes)')
 
-    # @staticmethod
-    # def exception_error():
-    #     print('Something went wrong... Please try again')
-
     def upload_to_json(self):
-        with open('candidates_robota_ua.json', 'w', encoding="utf-8") as json_file:
+        with open('candidates.json', 'w', encoding="utf-8") as json_file:
             json.dump(self.result, json_file, ensure_ascii=False, indent=4)
-            print('Resumes was received successfully!')
+            print('Resumes was download successfully!')
 
 
-p = RobotaUaParser()
-p.parse()
+# p = RobotaUaParser()
+# p.parse()
