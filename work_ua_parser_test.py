@@ -23,61 +23,40 @@ driver.implicitly_wait(10)
 #
 # url = 'https://www.work.ua/resumes/?ss=1'
 # # url = 'https://www.work.ua/resumes/9125228/'
-url = 'https://www.work.ua/resumes-dnipro-data+scientist/?employment=75&experience=166'
-#
+# url = 'https://www.work.ua/resumes-dnipro-data+scientist/?employment=75&experience=166'
+url = 'https://www.work.ua/resumes-kyiv-data+scientist/?education=66&experience=165'
 driver.get(url)
-#
-# pages_links = driver.find_element(By.CLASS_NAME, 'pagination')
-# next_btn = pages_links.find_element(By.CLASS_NAME, 'add-left-default')
-# next_btn.click()
-# next_btn = True
-# while next_btn:
-#     try:
-#         next_btn = (driver.find_element(By.CLASS_NAME, 'pagination').
-#                     find_element(By.CLASS_NAME, 'add-left-default'))
-#         next_link = next_btn.find_element(By.TAG_NAME, 'a').get_attribute('href')
-#         print(next_link)
-#         driver.get(next_link)
-#         print('CLICK')
-#         sleep(1)
-#     except NoSuchElementException:
-#         print('EXIT')
-#         next_btn = False
-# print('DONE')
 
-number = driver.find_element(By.ID, 'salaryfrom_selection').text
-print(number.split())
-
-# print(next_btn.text)
-# [print(page.text) for page in next_btn]
+salary_min_elm = driver.find_element(By.ID, 'salaryfrom_selection')
 
 
-# cv_info = driver.find_element(By.CLASS_NAME, 'card')
-#
-# name = cv_info.find_element(By.TAG_NAME, 'h1')
-# print(name.text)
-#
-# position = cv_info.find_element(By.TAG_NAME, 'h2')
-# print(position.text)
+salary_min_list = salary_min_elm.find_elements(By.TAG_NAME, 'option')
+
+
+# [print(val.text) for val in salary_min_list]
+exp_salary = 3000
+
+salary_min_elm.click()
+for elm in salary_min_list[1:]:
+    salary = int(''.join([val for val in elm.text[:7] if val.isdigit()]))
+    if exp_salary >= salary:
+        salary_min_elm.send_keys(salary)
+        sleep(3)
+
+driver.refresh()
+
+salary_max_elm = driver.find_element(By.ID, 'salaryto_selection')
+salary_max_list = salary_max_elm.find_elements(By.TAG_NAME, 'option')
+
+salary_max_elm.click()
+for elm in salary_max_list[1:]:
+    salary = int(''.join([val for val in elm.text[:7] if val.isdigit()]))
+    if exp_salary >= salary:
+        salary_max_elm.send_keys(salary)
+        sleep(3)
 
 
 
-# headers = cv_info.find_elements(By.TAG_NAME, 'h2')
-# for header in headers:
-#     print(header.find_elements(By.CLASS_NAME, 'h4'))
-
-# [print(header.text) for header in headers]
-
-
-# city_age = cv_info.find_element(By.CLASS_NAME, 'dl-horizontal').find_elements(By.TAG_NAME, 'dd')
-# lines = len(city_age)
-# age = city_age[(lines - 3)].text
-# city = city_age[(lines - 2)].text
-#
-# print(f'{age = }, {city = }')
-#
-# skills = cv_info.find_elements(By.CLASS_NAME, 'flex')[1].text.strip()
-# # print(skills)
 
 
 

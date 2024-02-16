@@ -128,6 +128,7 @@ class WorkUaParser:
         self.set_location()
         self.set_experience()
         self.set_salary()
+        self.set_salary('max')
         print('Searching ...')
         sleep(1)
 
@@ -172,13 +173,12 @@ class WorkUaParser:
         if years_of_exp != '':
             self.years_of_exp = self.validate(years_of_exp)
 
-        # salary_min = input('Enter min salary expected:\t')
-        # if salary_min != '':
-        #     self.salary_min = self.validate(salary_min)
-        # salary_max = input('Enter max salary expected:\t')
-        # if salary_max != '':
-        #     self.salary_max = self.validate(salary_max)
-        #
+        salary_min = input('Enter min salary expected:\t')
+        if salary_min != '':
+            self.salary_min = self.validate(salary_min)
+        salary_max = input('Enter max salary expected:\t')
+        if salary_max != '':
+            self.salary_max = self.validate(salary_max)
         photos = input('Enter yes/no to show resumes with photo only:\t')
         if photos == 'yes':
             self.show_photo()
@@ -218,12 +218,24 @@ class WorkUaParser:
             except (NoSuchElementException, StaleElementReferenceException):
                 print('There are some trouble. Experience was not set')
 
-    def set_salary(self):
-        try:
-            salary_elms = (self.driver.find_element(By.ID, 'experience_selection').
-                           find_elements(By.CLASS_NAME, 'checkbox'))
-        except NoSuchElementException:
-            print('No such salary in the list')
+    def set_salary(self, field=None):
+        self.driver.refresh()
+        if not field:
+            salary_elm = self.driver.find_element(By.ID, 'salaryfrom_selection')
+            salary = self.salary_min
+        else:
+            salary_elm = self.driver.find_element(By.ID, 'salaryto_selection')
+            salary = self.salary_max
+        salary_list = salary_elm.find_elements(By.TAG_NAME, 'option')
+        salary_elm.click()
+
+        for elm in salary_list[1:]:
+            # Get available values of salary on this parameters
+            salary_from_list = int(''.join([val for val in elm.text[:7] if val.isdigit()]))
+            if salary >= salary_from_list:
+                salary_elm.send_keys(salary)
+                sleep(1)
+
 
     @staticmethod
     def validate(value):
@@ -248,5 +260,5 @@ class WorkUaParser:
         print('Resumes was download successfully!')
 
 
-# p = WorkUaParser()
-# p.parse()
+p = WorkUaParser()
+p.parse()
