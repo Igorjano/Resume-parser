@@ -10,7 +10,6 @@ from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from time import sleep
 import json
-from sys import exit
 
 
 class RobotaUaParser:
@@ -27,15 +26,15 @@ class RobotaUaParser:
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
         self.options.add_argument("--blink-settings=imagesEnabled=false")
-        # self.options.add_argument('--headless=new')
+        self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
     def parse(self):
         self.driver.get(self.url)
         self.set_options()
-        self.get_number_of_cv()
         print('Downloading resume ...')
+        self.get_number_of_cv()
         try:
             self.get_cv_links()
             pages = (self. driver.find_element(By.CLASS_NAME, 'paginator').
@@ -44,12 +43,10 @@ class RobotaUaParser:
                 self.parse_next_btn()
             else:
                 self.parse_pages(len(pages))
-        except NoSuchElementException:
+        except (NoSuchElementException, TimeoutException):
             self.driver.quit()
             self.upload_to_json()
             return self.result
-        except TimeoutException:
-            print('Ops! Something wrong with the server')
 
     # If we have more than 5 pages use next button for navigation
     def parse_next_btn(self):
@@ -94,13 +91,8 @@ class RobotaUaParser:
                 self.get_cv_data(link)
                 self.driver.close()
                 self.driver.switch_to.window(current_window_handle)
-        except NoSuchElementException:
-            print('Oops! Something went wrong .. Try again')
-            self.driver.quit()
-        except TimeoutException:
+        except (NoSuchElementException, TimeoutException):
             print('There are no candidates according to the given criteria')
-            self.driver.quit()
-            exit()
 
     def get_cv_data(self, page_link):
         self.driver.get(page_link)
@@ -282,13 +274,9 @@ class RobotaUaParser:
         number = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-search-header').
                   find_element(By.CLASS_NAME, 'santa-text-red-500')).text
         print(f'Was found {number} candidate(-tes)')
-        if number == '0':
-            print('There are no candidates according to the given criteria')
-            self.driver.quit()
-            exit()
 
     def upload_to_json(self):
         with open('candidates.json', 'w', encoding="utf-8") as json_file:
             json.dump(self.result, json_file, ensure_ascii=False, indent=4)
-            print('Resumes was download successfully!')
+            print('Resume was download successfully!')
 

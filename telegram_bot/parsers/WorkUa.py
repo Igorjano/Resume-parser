@@ -27,7 +27,7 @@ class WorkUaParser:
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
         self.options.add_argument("--blink-settings=imagesEnabled=false")
-        # self.options.add_argument('--headless=new')
+        self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
@@ -62,12 +62,8 @@ class WorkUaParser:
                 self.get_cv_data(link)
                 self.driver.close()
                 self.driver.switch_to.window(current_window_handle)
-        except NoSuchElementException:
-            print('Oops! Something went wrong .. Try again')
-            self.driver.quit()
-        except TimeoutException:
+        except (NoSuchElementException, TimeoutException):
             print('There are no candidates according to the given criteria')
-            self.driver.quit()
 
     def get_cv_data(self, page_link):
         self.driver.get(page_link)
@@ -191,26 +187,29 @@ class WorkUaParser:
 
     def set_salary(self, field=None):
         self.driver.refresh()
-        if not field:
-            salary_elm = self.driver.find_element(By.ID, 'salaryfrom_selection')
-            salary = self.salary_min
-        else:
-            salary_elm = self.driver.find_element(By.ID, 'salaryto_selection')
-            salary = self.salary_max
-        if salary:
-            salary_list = salary_elm.find_elements(By.TAG_NAME, 'option')
-            salary_elm.click()
-            sleep(1)
+        try:
+            if not field:
+                salary_elm = self.driver.find_element(By.ID, 'salaryfrom_selection')
+                salary = self.salary_min
+            else:
+                salary_elm = self.driver.find_element(By.ID, 'salaryto_selection')
+                salary = self.salary_max
+            if salary:
+                salary_list = salary_elm.find_elements(By.TAG_NAME, 'option')
+                salary_elm.click()
+                sleep(1)
 
-            prev_salary = 0
-            for i, elm in enumerate(salary_list[1:]):
-                # Get available values of salary on this parameters
-                salary_from_list = int(''.join([val for val in elm.text[:7] if val.isdigit()]))
-                if prev_salary <= salary < salary_from_list:
-                    # Choose salary from the list
-                    salary_list[i].click()
-                    break
-                prev_salary = salary_from_list
+                prev_salary = 0
+                for i, elm in enumerate(salary_list[1:]):
+                    # Get available values of salary on this parameters
+                    salary_from_list = int(''.join([val for val in elm.text[:7] if val.isdigit()]))
+                    if prev_salary <= salary < salary_from_list:
+                        # Choose salary from the list
+                        salary_list[i].click()
+                        break
+                    prev_salary = salary_from_list
+        except NoSuchElementException:
+            print('You enter the wrong salary! Salary was not set')
 
     def show_photo(self):
         if self.photo:
@@ -220,12 +219,9 @@ class WorkUaParser:
     def get_number_of_cv(self):
         number_elm = self.driver.find_element(By.TAG_NAME, 'h1').text
         number = ''.join([num for num in number_elm if num.isdigit()])
-        if number == '0':
-            print('There are no candidates according to the given criteria')
-            self.driver.quit()
         print(f'Was found {number} candidate(-tes)')
 
     def upload_to_json(self):
         with open('candidates.json', 'w', encoding="utf-8") as json_file:
             json.dump(self.result, json_file, ensure_ascii=False, indent=4)
-        print('Resumes was download successfully!')
+        print('Resume was download successfully!')

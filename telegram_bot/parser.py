@@ -35,6 +35,18 @@ async def cmd_start(message: types.Message):
     await message.answer('Hi 👋\nI\'ll find the top five candidates that meet your requirements 😎')
 
 
+@router.message(Command('stop'))
+async def cancel_handler(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.clear()
+    await message.answer(
+        "Cancelled",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+
 @router.message(Command('search'))
 async def cmd_search(message: types.Message, state: FSMContext):
     await state.set_state(Parser.site)
@@ -84,6 +96,7 @@ async def incorrect_category(message: types.Message):
 async def search_text(message: types.Message, state: FSMContext):
     await state.update_data(search_text=message.text)
     await state.set_state(Parser.location)
+
     builder = ReplyKeyboardBuilder()
     for city in cities:
         builder.add(types.KeyboardButton(text=city))
@@ -95,11 +108,12 @@ async def search_text(message: types.Message, state: FSMContext):
 
 @router.message(Parser.location)
 async def select_location(message: types.Message, state: FSMContext):
+    await state.update_data(location=message.text)
+
     if message.text == 'search by all cities':
         await state.update_data(location=None)
-    else:
-        await state.update_data(location=message.text)
     await state.set_state(Parser.experience)
+
     builder = ReplyKeyboardBuilder()
     for year in experience:
         builder.add(types.KeyboardButton(text=year))
@@ -124,6 +138,7 @@ async def select_experience(message: types.Message, state: FSMContext):
             await state.update_data(experience=None)
             await message.reply('You enter invalid value. Experience wasn\'t set')
     await state.set_state(Parser.min_salary)
+
     builder = ReplyKeyboardBuilder()
     for salary in salary_lst:
         builder.add(types.KeyboardButton(text=salary))
@@ -144,6 +159,7 @@ async def select_min_salary(message: types.Message, state: FSMContext):
             await state.update_data(min_salary=None)
             await message.reply('Salary must be an integer! Minimum salary wasn\'t set')
     await state.set_state(Parser.max_salary)
+
     builder = ReplyKeyboardBuilder()
     for salary in salary_lst:
         builder.add(types.KeyboardButton(text=salary))
@@ -164,6 +180,7 @@ async def select_max_salary(message: types.Message, state: FSMContext):
             await state.update_data(max_salary=None)
             await message.reply('Salary must be an integer! Maximum salary wasn\'t set')
     await state.set_state(Parser.photo)
+
     kb = [
         [types.KeyboardButton(text='yes'),
          types.KeyboardButton(text='no')],
@@ -184,53 +201,40 @@ async def select_photo(message: types.Message, state: FSMContext):
     else:
         await state.update_data(photo=None)
     await state.set_state(Parser.parse)
+
     kb = [
-        [types.KeyboardButton(text='search')]
+        [types.KeyboardButton(text='start searching')],
     ]
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=kb,
-        resize_keyboard=True,
-        # input_field_placeholder=""
+        resize_keyboard=True
     )
-    await message.answer('Awesome! All parameters are set so I can start searching',
+    await message.answer('Awesome! All parameters are set 👍. Press the button and wait a little',
                          reply_markup=keyboard)
 
 
-@router.message(Parser.parse, F.text == 'search')
+@router.message(Parser.parse)
 async def parse(message: types.Message, state: FSMContext):
+    await message.answer('Finding candidates ...', reply_markup=ReplyKeyboardRemove())
     options = await state.get_data()
-    print(options)
-    await message.answer('Wait some time so I prepare the result', reply_markup=ReplyKeyboardRemove())
-    if options['site'] == 'robota.ua':
-        p = RobotaUaParser(options['category'], options['search_text'], options['location'],
-                           options['experience'], options['min_salary'], options['max_salary'],
-                           options['photo'])
-    elif options['site'] == 'work.ua':
-        p = WorkUaParser(options['category'], options['search_text'], options['location'],
-                         options['experience'], options['min_salary'], options['max_salary'],
-                         options['photo'])
+    parser = RobotaUaParser
+    if options['site'] == 'work.ua':
+        parser = WorkUaParser
+    p = parser(options['category'], options['search_text'], options['location'],
+               options['experience'], options['min_salary'], options['max_salary'],
+               options['photo'])
 
-    await message.answer('Searching ...')
     candidates = p.parse()
-    if len(candidates) > 0:
-        await message.answer('Downloading ...')
-        # candidates = load_data()
-        await message.answer('Sorting ...')
+    print(candidates)
+    if candidates:
+        await message.answer('Downloading resume...')
         result = sorting(candidates)
+        await message.answer('Sorting ...')
         for res in result[:5]:
             await message.answer(res['cv_page'], prefer_small_media=True)
     else:
-        await message.answer('There are no candidates according to the given criteria')
+        await message.answer('There are no candidates according to the given criteria\nTry another parameters')
     await state.clear()
 
 
-@router.message(Command('stop'))
-async def cancel_handler(message: types.Message, state: FSMContext):
-    current_state = await state.get_state()
-    if current_state is None:
-        return
-    await state.clear()
-    await message.answer(
-        "Cancelled",
-        reply_markup=ReplyKeyboardRemove(),
-    )
+

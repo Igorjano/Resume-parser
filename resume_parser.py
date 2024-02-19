@@ -11,8 +11,8 @@ def main():
     For exit enter 0\n''')
     num = input('Enter the number:\t')
 
-    parser = source_choice(num)
-    parser.parse()
+    p = source_choice(num)
+    p.parse()
     candidates = load_data()
     print('Preparing the most relevant...')
     result = sorting(candidates)
@@ -23,7 +23,7 @@ def load_data():
     """Read file with info of candidates after parsing pages with RobotaUaParser or WorkUaParser"""
 
     try:
-        with open('candidates_work_ua.json', 'r', encoding='utf-8') as json_file:
+        with open('candidates.json', 'r', encoding='utf-8') as json_file:
             data = json.load(json_file)
             return data
     except NameError:
