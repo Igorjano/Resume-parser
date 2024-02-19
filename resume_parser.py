@@ -1,7 +1,7 @@
 import json
 
-from RabotaUa import RobotaUaParser
-from WorkUa import WorkUaParser
+from RobotaUa_ import RobotaUaParser
+from WorkUa_ import WorkUaParser
 
 
 def main():
