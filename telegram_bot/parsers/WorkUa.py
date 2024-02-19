@@ -13,19 +13,21 @@ import json
 
 
 class WorkUaParser:
-    def __init__(self):
+    def __init__(self, category, text, location, experience, salary_min, salary_max, photo):
         self.url = 'https://www.work.ua/resumes/?ss=1'
         self.result = []
         self.keywords = None
-        self.location = None
-        self.years_of_exp = None
-        self.salary_min = None
-        self.salary_min = None
-        self.salary_max = None
+        self.category = category
+        self.search_text = text
+        self.location = location
+        self.years_of_exp = experience
+        self.salary_min = salary_min
+        self.salary_max = salary_max
+        self.photo = photo
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
         self.options.add_argument("--blink-settings=imagesEnabled=false")
-        # self.options.add_argument('--headless=new')
+        self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
@@ -52,7 +54,6 @@ class WorkUaParser:
             cv_elms = (WebDriverWait(self.driver, 20).
                        until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'resume-link'))))
             links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elms]
-
             current_window_handle = self.driver.current_window_handle
             for link in links:
                 self.driver.execute_script("window.open('');")
@@ -121,28 +122,22 @@ class WorkUaParser:
 
     def set_options(self):
         self.set_category()
-        self.select_options()
         print('Setting options ...')
         self.set_location()
         self.set_experience()
         self.set_salary()
         self.set_salary('max')
+        self.show_photo()
         print('Searching ...')
         sleep(1)
 
     def set_category(self):
-        category = input('Choose category in what you want to search:\n1 - Job position\n2 - Skills or keywords\t')
-        if category == '1':
-            search_text = input('What position are you looking for:\t')
-            self.set_search_text(search_text)
-        elif category == '2':
+        if self.category == '1':
+            self.set_search_text(self.search_text)
+        elif self.category == '2':
             self.switch_category()
-            search_text = input('What skills are you looking for:\t')
-            self.keywords = search_text.split()
-            self.set_search_text(search_text)
-        else:
-            print('Please make your choice')
-            self.set_category()
+            self.keywords = self.search_text.split()
+            self.set_search_text(self.search_text)
 
     def set_search_text(self, text):
         search_input = self.driver.find_element(By.CLASS_NAME, 'form-control')
@@ -159,27 +154,6 @@ class WorkUaParser:
             checkboxes = search_elms.find_elements(By.CLASS_NAME, 'checkbox')
             checkboxes[i].click()
             sleep(1)
-
-    def select_options(self):
-        print('Please enter search additional parameters. If you want to leave fields empty just press Enter')
-
-        location = input('Location:\t')
-        if location != '':
-            self.location = location
-
-        years_of_exp = input('If you want only candidates without experience enter 0. Years of experience:\t')
-        if years_of_exp != '':
-            self.years_of_exp = self.validate(years_of_exp)
-
-        salary_min = input('Enter min salary expected:\t')
-        if salary_min != '':
-            self.salary_min = self.validate(salary_min)
-        salary_max = input('Enter max salary expected:\t')
-        if salary_max != '':
-            self.salary_max = self.validate(salary_max)
-        photos = input('Enter yes/no to show resumes with photo only:\t')
-        if photos == 'yes':
-            self.show_photo()
 
     def set_location(self):
         if self.location:
@@ -238,21 +212,16 @@ class WorkUaParser:
                     break
                 prev_salary = salary_from_list
 
-    @staticmethod
-    def validate(value):
-        while not type(value) is int:
-            try:
-                value = int(value)
-            except ValueError:
-                value = input('Enter integer number:\t')
-        return value
-
     def show_photo(self):
-        self.driver.find_element(By.ID, 'photo_selection').click()
+        if self.photo:
+            self.driver.find_element(By.ID, 'photo_selection').click()
 
     def get_number_of_cv(self):
         number_elm = self.driver.find_element(By.TAG_NAME, 'h1').text
         number = ''.join([num for num in number_elm if num.isdigit()])
+        if number == '0':
+            print('There are no candidates according to the given criteria')
+            self.driver.quit()
         print(f'Was found {number} candidate(-tes)')
 
     def upload_to_json(self):

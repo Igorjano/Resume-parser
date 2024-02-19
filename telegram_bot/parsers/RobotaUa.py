@@ -13,16 +13,18 @@ import json
 
 
 class RobotaUaParser:
-    def __init__(self):
+    def __init__(self, category, text, location, experience, salary_min, salary_max, photo):
         self.url = 'https://robota.ua/candidates/all'
         self.result = []
         self.candidate_info = {}
-        self.keywords = []
-        self.location = None
-        self.years_of_exp = None
-        self.salary_min = None
-        self.salary_min = None
-        self.salary_max = None
+        self.keywords = None
+        self.category = category
+        self.search_text = text
+        self.location = location
+        self.years_of_exp = experience
+        self.salary_min = salary_min
+        self.salary_max = salary_max
+        self.photo = photo
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--window-size=1366,768")
         self.options.add_argument("--blink-settings=imagesEnabled=false")
@@ -152,27 +154,21 @@ class RobotaUaParser:
 
     def set_options(self):
         self.set_category()
-        self.select_options()
         print('Setting options ...')
         self.set_location()
         self.set_experience()
         self.set_salary()
+        self.show_photo()
         print('Searching ...')
         sleep(1)
 
     def set_category(self):
-        category = input('Choose category in what you want to search:\n1 - Job position\n2 - Skills or keywords\t')
-        if category == '1':
-            search_text = input('What position are you looking for:\t')
-            self.set_search_text(search_text)
-        elif category == '2':
-            search_text = input('What skills are you looking for:\t')
-            self.keywords = search_text.split()
+        if self.category == '1':
+            self.set_search_text(self.search_text)
+        elif self.category == '2':
+            self.keywords = self.search_text.split()
             self.switch_category()
-            self.set_search_text(search_text)
-        else:
-            print('Please make your choice')
-            self.set_category()
+            self.set_search_text(self.search_text)
 
     def set_search_text(self, text):
         search_input = (self.driver.find_element(By.TAG_NAME, 'santa-suggest-input')
@@ -191,28 +187,6 @@ class RobotaUaParser:
             category[4].click()
         except StaleElementReferenceException:
             print('Something wrong with the category')
-
-    def select_options(self):
-        print('Please enter search additional parameters. If you want to leave fields empty just press Enter')
-
-        location = input('Location:\t')
-        if location != '':
-            self.location = location
-
-        years_of_exp = input('If you want only candidates without experience enter 0. Years of experience:\t')
-        if years_of_exp != '':
-            self.years_of_exp = self.validate(years_of_exp)
-
-        salary_min = input('Enter min salary expected:\t')
-        if salary_min != '':
-            self.salary_min = self.validate(salary_min)
-        salary_max = input('Enter max salary expected:\t')
-        if salary_max != '':
-            self.salary_max = self.validate(salary_max)
-
-        photos = input('Enter yes/no to show resumes with photo only:\t')
-        if photos == 'yes':
-            self.show_photo()
 
     def set_location(self):
         if self.location:
@@ -263,19 +237,11 @@ class RobotaUaParser:
             max_input.send_keys(self.salary_max)
             max_input.send_keys(Keys.RETURN)
 
-    @staticmethod
-    def validate(value):
-        while not type(value) is int:
-            try:
-                value = int(value)
-            except ValueError:
-                value = input('Enter integer number:\t')
-        return value
-
     def show_photo(self):
-        sleep(2)
-        self.driver.execute_script("window.scrollTo(0, document.body.scrollTop);")
-        self.driver.find_element(By.TAG_NAME, 'santa-toggler').click()
+        if self.photo == 'yes':
+            sleep(2)
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollTop);")
+            self.driver.find_element(By.TAG_NAME, 'santa-toggler').click()
 
     def get_number_of_cv(self):
         number = (self.driver.find_element(By.TAG_NAME, 'alliance-employer-cvdb-search-header').
@@ -289,4 +255,3 @@ class RobotaUaParser:
         with open('candidates.json', 'w', encoding="utf-8") as json_file:
             json.dump(self.result, json_file, ensure_ascii=False, indent=4)
             print('Resumes was download successfully!')
-
