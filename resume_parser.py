@@ -47,7 +47,7 @@ def sorting(data):
     """This function sort candidates by skills match or completeness of the resume"""
 
     if [d for d in data if 'skills_match' in d.keys()]:
-        res = sorted(data, key=lambda d: (d['match'], d['cv_fullness'], d['skills_num']), reverse=True)
+        res = sorted(data, key=lambda d: (d['skills_match'], d['cv_fullness'], d['skills_num']), reverse=True)
     else:
         res = sorted(data, key=lambda d: (d['cv_fullness'], d['skills_num']), reverse=True)
     return res

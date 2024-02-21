@@ -225,7 +225,6 @@ async def parse(message: types.Message, state: FSMContext):
                options['photo'])
 
     candidates = p.parse()
-    print(candidates)
     if candidates:
         await message.answer('Got it!')
         result = sorting(candidates)
@@ -234,6 +233,3 @@ async def parse(message: types.Message, state: FSMContext):
     else:
         await message.answer('There are no candidates according to the given criteria\nTry another parameters')
     await state.clear()
-
-
-

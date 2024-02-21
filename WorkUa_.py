@@ -23,7 +23,7 @@ class WorkUaParser:
         self.salary_max = None
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--blink-settings=imagesEnabled=false")
-        self.options.add_argument('--headless=new')
+        # self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
@@ -177,14 +177,18 @@ class WorkUaParser:
         # sleep(1)
         # checkboxes[2].click()
         # sleep(1)
-        filter_elm = (WebDriverWait(self.driver, 20).
-                      until(EC.presence_of_element_located((By.CLASS_NAME, 'filters-controls-container'))))
-        search_elms = filter_elm.find_elements(By.CLASS_NAME, 'form-group')[-1]
-        checkboxes = search_elms.find_elements(By.CLASS_NAME, 'checkbox')
-        checkboxes[0].click()
-        sleep(1)
-        checkboxes[2].click()
-        sleep(1)
+        (WebDriverWait(self.driver, 20).
+         until(EC.element_to_be_clickable((By.CLASS_NAME, 'f1-1')))).click()
+
+        (WebDriverWait(self.driver, 20).
+         until(EC.element_to_be_clickable((By.CLASS_NAME, 'f1-3')))).click()
+
+        # search_elms = filter_elm.find_elements(By.CLASS_NAME, 'form-group')[-1]
+        # checkboxes = search_elms.find_elements(By.CLASS_NAME, 'checkbox')
+        # WebDriverWait(search_elms, 10).until(EC.element_to_be_clickable(checkboxes[0])).click()
+        # sleep(1)
+        # checkboxes[2].click()
+        # sleep(1)
 
 
     def select_options(self):
@@ -229,7 +233,7 @@ class WorkUaParser:
             try:
                 exp_elms = (WebDriverWait(self.driver, 20).
                             until(EC.visibility_of_element_located((By.ID, 'experience_selection'))))
-
+                # sleep(1)
                 checkboxes = (WebDriverWait(exp_elms, 20).
                               until(EC.visibility_of_all_elements_located((By.CLASS_NAME, 'checkbox'))))
 
@@ -303,5 +307,5 @@ class WorkUaParser:
         print('Resume was download successfully!')
 
 
-p = WorkUaParser()
-p.parse()
+# p = WorkUaParser()
+# p.parse()

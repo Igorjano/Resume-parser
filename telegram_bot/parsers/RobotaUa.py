@@ -32,8 +32,8 @@ class RobotaUaParser:
     def parse(self):
         self.driver.maximize_window()
         self.driver.get(self.url)
-        print('Setting options ...')
         self.set_options()
+        print('Setting options ...')
         print('Downloading resume ...')
         self.get_number_of_cv()
         # Check if we have pages navigation
@@ -46,9 +46,12 @@ class RobotaUaParser:
                 self.parse_next_btn()
             else:
                 self.parse_pages(len(pages))
-        except TimeoutException:
-            self.upload_to_json()
             self.driver.quit()
+            self.upload_to_json()
+            return self.result
+        except TimeoutException:
+            self.driver.quit()
+            self.upload_to_json()
             return self.result
 
     # If we have more than 5 pages use next button for navigation
@@ -64,8 +67,6 @@ class RobotaUaParser:
             except TimeoutException:
                 next_btn = False
 
-        self.driver.quit()
-        self.upload_to_json()
         return self.result
 
     # Click on every next page link
@@ -79,16 +80,18 @@ class RobotaUaParser:
 
             pages_links[i + 1].click()
             self.get_cv_links()
-        self.driver.quit()
-        self.upload_to_json()
+
         return self.result
 
     def get_cv_links(self):
         try:
             cv_elms = (WebDriverWait(self.driver, 20).
-                       until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'cv-card'))))
+                       until(EC.visibility_of_all_elements_located((By.CLASS_NAME, 'cv-card'))))
 
-            links = [elm.find_element(By.TAG_NAME, 'a').get_attribute("href") for elm in cv_elms]
+            links = [WebDriverWait(elm, 10).
+                     until(EC.visibility_of_element_located((By.TAG_NAME, 'a'))).
+                     get_attribute("href") for elm in cv_elms]
+
             current_window_handle = self.driver.current_window_handle
 
             for link in links:
