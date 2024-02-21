@@ -23,14 +23,13 @@ class RobotaUaParser:
         self.salary_min = None
         self.salary_max = None
         self.options = webdriver.ChromeOptions()
-        self.options.add_argument("--start-maximized")
-        self.options.add_argument("--blink-settings=imagesEnabled=false")
+        self.options.add_argument('--start-maximized')
+        self.options.add_argument('--blink-settings=imagesEnabled=false')
         self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
     def parse(self):
-        self.driver.maximize_window()
         self.driver.get(self.url)
         self.set_options()
         print('Setting options ...')
@@ -46,9 +45,11 @@ class RobotaUaParser:
                 self.parse_next_btn()
             else:
                 self.parse_pages(len(pages))
+
             self.driver.quit()
             self.upload_to_json()
             return self.result
+
         except NoSuchElementException:
             self.upload_to_json()
             self.driver.quit()
@@ -104,6 +105,7 @@ class RobotaUaParser:
                 self.driver.switch_to.window(current_window_handle)
 
             print(f'{len(self.result)} candidates was downloaded')
+
         except TimeoutException:
             print('There are no candidates according to the given criteria')
 
@@ -287,6 +289,7 @@ class RobotaUaParser:
         if self.salary_min:
             min_input.send_keys(self.salary_min)
             min_input.send_keys(Keys.RETURN)
+
         if self.salary_max:
             max_input.send_keys(self.salary_max)
             max_input.send_keys(Keys.RETURN)

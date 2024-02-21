@@ -34,7 +34,6 @@ class RobotaUaParser:
     def parse(self):
         self.driver.get(self.url)
         self.set_options()
-        print('Setting options ...')
         print('Downloading resume ...')
         self.get_number_of_cv()
         # Check if we have pages navigation
@@ -47,9 +46,11 @@ class RobotaUaParser:
                 self.parse_next_btn()
             else:
                 self.parse_pages(len(pages))
+
             self.driver.quit()
             self.upload_to_json()
             return self.result
+
         except NoSuchElementException:
             self.driver.quit()
             self.upload_to_json()
@@ -65,6 +66,7 @@ class RobotaUaParser:
 
                 next_btn.click()
                 self.get_cv_links()
+
             except TimeoutException:
                 next_btn = False
 
@@ -104,6 +106,7 @@ class RobotaUaParser:
                 self.driver.switch_to.window(current_window_handle)
 
             print(f'{len(self.result)} candidates was downloaded')
+
         except TimeoutException:
             print('There are no candidates according to the given criteria')
 
@@ -164,6 +167,7 @@ class RobotaUaParser:
         return match
 
     def set_options(self):
+        print('Setting options ...')
         self.set_category()
         self.set_location()
         self.show_photo()
@@ -259,6 +263,7 @@ class RobotaUaParser:
         if self.salary_min:
             min_input.send_keys(self.salary_min)
             min_input.send_keys(Keys.RETURN)
+
         if self.salary_max:
             max_input.send_keys(self.salary_max)
             max_input.send_keys(Keys.RETURN)

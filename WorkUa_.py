@@ -22,15 +22,14 @@ class WorkUaParser:
         self.salary_min = None
         self.salary_max = None
         self.options = webdriver.ChromeOptions()
-        self.options.add_argument("--blink-settings=imagesEnabled=false")
+        self.options.add_argument('--start-maximized')
+        self.options.add_argument('--blink-settings=imagesEnabled=false')
         # self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
     def parse(self):
-        self.driver.maximize_window()
         self.driver.get(self.url)
-        print('Setting options ...')
         self.set_options()
         print('Downloading resume ...')
         self.get_number_of_cv()
@@ -44,6 +43,7 @@ class WorkUaParser:
 
                 next_btn_link = next_btn.find_element(By.TAG_NAME, 'a').get_attribute('href')
                 self.driver.get(next_btn_link)
+
             except NoSuchElementException:
                 self.driver.quit()
                 self.upload_to_json()
@@ -54,9 +54,12 @@ class WorkUaParser:
             cv_elms = (WebDriverWait(self.driver, 20).
                        until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'resume-link'))))
 
-            links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elms]
+            links = [WebDriverWait(elm, 10).
+                     until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'a'))).
+                     get_attribute("href") for elm in cv_elms]
 
             current_window_handle = self.driver.current_window_handle
+
             for link in links:
                 self.driver.execute_script("window.open('');")
                 handles = self.driver.window_handles
@@ -66,6 +69,7 @@ class WorkUaParser:
                 self.driver.switch_to.window(current_window_handle)
 
             print(f'{len(self.result)} candidates was downloaded')
+
         except TimeoutException:
             print('There are no candidates according to the given criteria')
 
@@ -88,12 +92,15 @@ class WorkUaParser:
 
     def get_skills(self):
         try:
-            skills = (self.driver.find_element(By.CLASS_NAME, 'card').
-                      find_elements(By.CLASS_NAME, 'flex')[1].text.replace('\n', ', '))
+            skills_elm = (WebDriverWait(self.driver, 10).
+                          until(EC.presence_of_element_located((By.CLASS_NAME, 'card'))))
+
+            skills = skills_elm.find_elements(By.CLASS_NAME, 'flex')[1].text.replace('\n', ', ')
             skills_num = len(skills)
         except IndexError:
             skills = 'not specified'
             skills_num = 0
+
         return skills, skills_num
 
     def check_skills(self, skills):
@@ -127,9 +134,9 @@ class WorkUaParser:
         return int(cv_fullness)
 
     def set_options(self):
+        print('Setting options ...')
         self.set_category()
         self.select_options()
-        print('Setting options ...')
         self.set_location()
         self.set_experience()
         self.set_salary()
@@ -161,35 +168,13 @@ class WorkUaParser:
 
     # Switch category for search everywhere on the text
     def switch_category(self):
-        # filter_elm = (WebDriverWait(self.driver, 20).
-        #               until(EC.presence_of_element_located((By.CLASS_NAME, 'filters-controls-container'))))
-        #
-        # # filter_elm = (self.driver.find_element(By.CLASS_NAME, 'filters-controls-container').
-        # #               find_elements(By.CLASS_NAME, 'form-group'))[-1]
-        #
-        # search_elms = (WebDriverWait(filter_elm, 20).
-        #                until(EC.element_located_to_be_selected((By.CLASS_NAME, 'form-group'))))[-1]
-        #
-        # # sea
-        #
-        # checkboxes = filter_elm.find_elements(By.CLASS_NAME, 'checkbox')
-        # checkboxes[0].click()
-        # sleep(1)
-        # checkboxes[2].click()
-        # sleep(1)
         (WebDriverWait(self.driver, 20).
-         until(EC.element_to_be_clickable((By.CLASS_NAME, 'f1-1')))).click()
+         until(EC.element_to_be_clickable((By.ID, 'f1-1')))).click()
+        sleep(1)
 
         (WebDriverWait(self.driver, 20).
-         until(EC.element_to_be_clickable((By.CLASS_NAME, 'f1-3')))).click()
-
-        # search_elms = filter_elm.find_elements(By.CLASS_NAME, 'form-group')[-1]
-        # checkboxes = search_elms.find_elements(By.CLASS_NAME, 'checkbox')
-        # WebDriverWait(search_elms, 10).until(EC.element_to_be_clickable(checkboxes[0])).click()
-        # sleep(1)
-        # checkboxes[2].click()
-        # sleep(1)
-
+         until(EC.element_to_be_clickable((By.ID, 'f3-3')))).click()
+        sleep(1)
 
     def select_options(self):
         print('Please enter search additional parameters. If you want to leave fields empty just press Enter')
@@ -233,7 +218,7 @@ class WorkUaParser:
             try:
                 exp_elms = (WebDriverWait(self.driver, 20).
                             until(EC.visibility_of_element_located((By.ID, 'experience_selection'))))
-                # sleep(1)
+
                 checkboxes = (WebDriverWait(exp_elms, 20).
                               until(EC.visibility_of_all_elements_located((By.CLASS_NAME, 'checkbox'))))
 
@@ -251,10 +236,10 @@ class WorkUaParser:
             except TimeoutException:
                 print('There are some trouble. Experience was not set')
 
-    def set_salary(self, field=None):
+    def set_salary(self, max_=None):
         self.driver.refresh()
         try:
-            if not field:
+            if not max_:
                 salary_elm = (WebDriverWait(self.driver, 20).
                               until(EC.presence_of_element_located((By.ID, 'salaryfrom_selection'))))
 
@@ -265,8 +250,10 @@ class WorkUaParser:
 
                 salary = self.salary_max
             if salary:
-                salary_list = salary_elm.find_elements(By.TAG_NAME, 'option')
+                salary_list = (WebDriverWait(salary_elm, 10).
+                               until(EC.visibility_of_all_elements_located((By.TAG_NAME, 'option'))))
                 salary_elm.click()
+                sleep(1)
 
                 prev_salary = 0
                 for i, elm in enumerate(salary_list[1:]):
@@ -305,7 +292,3 @@ class WorkUaParser:
         with open('candidates.json', 'w', encoding="utf-8") as json_file:
             json.dump(self.result, json_file, ensure_ascii=False, indent=4)
         print('Resume was download successfully!')
-
-
-# p = WorkUaParser()
-# p.parse()

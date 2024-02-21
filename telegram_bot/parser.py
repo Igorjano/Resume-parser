@@ -218,8 +218,10 @@ async def parse(message: types.Message, state: FSMContext):
     await message.answer('Finding candidates ...', reply_markup=ReplyKeyboardRemove())
     options = await state.get_data()
     parser = RobotaUaParser
+
     if options['site'] == 'work.ua':
         parser = WorkUaParser
+
     p = parser(options['category'], options['search_text'], options['location'],
                options['experience'], options['min_salary'], options['max_salary'],
                options['photo'])

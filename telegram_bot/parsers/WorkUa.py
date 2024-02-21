@@ -24,15 +24,14 @@ class WorkUaParser:
         self.salary_max = salary_max
         self.photo = photo
         self.options = webdriver.ChromeOptions()
+        self.options.add_argument('--start-maximized')
         self.options.add_argument("--blink-settings=imagesEnabled=false")
-        self.options.add_argument('--headless=new')
+        # self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
     def parse(self):
-        self.driver.maximize_window()
         self.driver.get(self.url)
-        print('Setting options ...')
         self.set_options()
         print('Downloading resume ...')
         self.get_number_of_cv()
@@ -46,6 +45,7 @@ class WorkUaParser:
 
                 next_btn_link = next_btn.find_element(By.TAG_NAME, 'a').get_attribute('href')
                 self.driver.get(next_btn_link)
+
             except NoSuchElementException:
                 self.driver.quit()
                 self.upload_to_json()
@@ -56,9 +56,12 @@ class WorkUaParser:
             cv_elms = (WebDriverWait(self.driver, 20).
                        until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'resume-link'))))
 
-            links = [elm.find_element(By.CSS_SELECTOR, 'a').get_attribute("href") for elm in cv_elms]
+            links = [WebDriverWait(elm, 10).
+                     until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'a'))).
+                     get_attribute("href") for elm in cv_elms]
 
             current_window_handle = self.driver.current_window_handle
+
             for link in links:
                 self.driver.execute_script("window.open('');")
                 handles = self.driver.window_handles
@@ -75,8 +78,11 @@ class WorkUaParser:
         self.driver.get(page_link)
         candidate_info = {}
 
-        candidate_info['position'] = self.driver.find_element(By.TAG_NAME, 'h2').text
-        candidate_info['name'] = self.driver.find_element(By.TAG_NAME, 'h1').text
+        cv_card_elm = (WebDriverWait(self.driver, 10).
+                       until(EC.presence_of_element_located((By.CLASS_NAME, 'card'))))
+
+        candidate_info['position'] = cv_card_elm.find_element(By.TAG_NAME, 'h2').text
+        candidate_info['name'] = cv_card_elm.find_element(By.TAG_NAME, 'h1').text
         candidate_info['cv_page'] = page_link
         candidate_info['cv_fullness'] = self.get_score()
         candidate_info['skills'], candidate_info['skills_num'] = self.get_skills()
@@ -87,8 +93,10 @@ class WorkUaParser:
 
     def get_skills(self):
         try:
-            skills = (self.driver.find_element(By.CLASS_NAME, 'card').
-                      find_elements(By.CLASS_NAME, 'flex')[1].text.replace('\n', ', '))
+            skills_elm = (WebDriverWait(self.driver, 10).
+                          until(EC.presence_of_element_located((By.CLASS_NAME, 'card'))))
+
+            skills = skills_elm.find_elements(By.CLASS_NAME, 'flex')[1].text.replace('\n', ', ')
             skills_num = len(skills)
         except IndexError:
             skills = 'not specified'
@@ -126,6 +134,7 @@ class WorkUaParser:
         return int(cv_fullness)
 
     def set_options(self):
+        print('Setting options ...')
         self.set_category()
         self.set_location()
         self.set_experience()
@@ -153,16 +162,13 @@ class WorkUaParser:
 
     # Switch category for search everywhere on the text
     def switch_category(self):
-        filter_elm = (WebDriverWait(self.driver, 20).
-                      until(EC.presence_of_element_located((By.CLASS_NAME, 'filters-controls-container'))))
-
-        search_elms = (WebDriverWait(filter_elm, 20).
-                       until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'form-group'))))[-1]
-
-        checkboxes = search_elms.find_elements(By.CLASS_NAME, 'checkbox')
-        checkboxes[0].click()
+        self.driver.refresh()
+        (WebDriverWait(self.driver, 20).
+         until(EC.element_to_be_clickable((By.ID, 'f1-1')))).click()
         sleep(1)
-        checkboxes[2].click()
+
+        (WebDriverWait(self.driver, 20).
+         until(EC.element_to_be_clickable((By.ID, 'f3-3')))).click()
         sleep(1)
 
     def set_location(self):
@@ -177,6 +183,7 @@ class WorkUaParser:
                 loc_search.send_keys(Keys.RETURN)
                 loc_search.send_keys(Keys.RETURN)
                 sleep(1)
+
             except TimeoutException:
                 print('You enter the wrong location! Location set to all Ukraine')
 
@@ -208,12 +215,12 @@ class WorkUaParser:
         try:
             if not field:
                 salary_elm = (WebDriverWait(self.driver, 20).
-                              until(EC.visibility_of_element_located((By.ID, 'salaryfrom_selection'))))
+                              until(EC.presence_of_element_located((By.ID, 'salaryfrom_selection'))))
 
                 salary = self.salary_min
             else:
                 salary_elm = (WebDriverWait(self.driver, 20).
-                              until(EC.visibility_of_element_located((By.ID, 'salaryto_selection'))))
+                              until(EC.presence_of_element_located((By.ID, 'salaryto_selection'))))
 
                 salary = self.salary_max
             if salary:
@@ -236,10 +243,8 @@ class WorkUaParser:
 
     def show_photo(self):
         if self.photo:
-            # self.driver.refresh()
-            # (WebDriverWait(self.driver, 20).
-            #  until(EC.element_to_be_clickable((By.ID, 'photo_selection')))).click()
-            self.driver.find_element(By.ID, 'photo_selection').click()
+            (WebDriverWait(self.driver, 20).
+             until(EC.element_to_be_clickable((By.ID, 'photo_selection')))).click()
 
     def get_number_of_cv(self):
         number_elm = (WebDriverWait(self.driver, 20).
