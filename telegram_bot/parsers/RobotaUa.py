@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from time import sleep
 import json
@@ -24,13 +25,13 @@ class RobotaUaParser:
         self.salary_max = salary_max
         self.photo = photo
         self.options = webdriver.ChromeOptions()
+        self.options.add_argument("--start-maximized")
         self.options.add_argument("--blink-settings=imagesEnabled=false")
         self.options.add_argument('--headless=new')
         self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
                                        options=self.options)
 
     def parse(self):
-        self.driver.maximize_window()
         self.driver.get(self.url)
         self.set_options()
         print('Setting options ...')
@@ -49,7 +50,7 @@ class RobotaUaParser:
             self.driver.quit()
             self.upload_to_json()
             return self.result
-        except TimeoutException:
+        except NoSuchElementException:
             self.driver.quit()
             self.upload_to_json()
             return self.result
