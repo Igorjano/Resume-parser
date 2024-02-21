@@ -227,9 +227,8 @@ async def parse(message: types.Message, state: FSMContext):
     candidates = p.parse()
     print(candidates)
     if candidates:
-        await message.answer('Downloading resume...')
+        await message.answer('Got it!')
         result = sorting(candidates)
-        await message.answer('Sorting ...')
         for res in result[:5]:
             await message.answer(res['cv_page'], prefer_small_media=True)
     else:
