@@ -6,7 +6,7 @@ from aiogram.types import ReplyKeyboardRemove
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
-from utils import load_data, sorting
+from utils import sorting_data
 from parsers.RobotaUa import RobotaUaParser
 from parsers.WorkUa import WorkUaParser
 
@@ -197,9 +197,9 @@ async def select_max_salary(message: types.Message, state: FSMContext):
 @router.message(Parser.photo)
 async def select_photo(message: types.Message, state: FSMContext):
     if message.text == 'yes':
-        await state.update_data(photo='yes')
+        await state.update_data(photo=True)
     else:
-        await state.update_data(photo=None)
+        await state.update_data(photo=False)
     await state.set_state(Parser.parse)
 
     kb = [
@@ -229,7 +229,7 @@ async def parse(message: types.Message, state: FSMContext):
     candidates = p.parse()
     if candidates:
         await message.answer('Got it!')
-        result = sorting(candidates)
+        result = sorting_data(candidates)
         for res in result[:5]:
             await message.answer(res['cv_page'], prefer_small_media=True)
     else:
